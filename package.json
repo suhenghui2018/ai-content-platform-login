@@ -1,6 +1,7 @@
 {
   "name": "ai-content-platform-login",
   "version": "1.0.0",
+  "type": "module",
   "description": "AI全渠道内容生成平台登录页面",
   "main": "index.js",
   "scripts": {
