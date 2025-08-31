@@ -7,6 +7,7 @@ import RegisterForm from './components/RegisterForm';
 import UserManagementPanel from './components/UserManagementPanel';
 import { initializeDemoData } from './utils/demoData';
 import TestCredentials from './components/TestCredentials';
+import { images } from './assets/images';
 
 function App() {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ function App() {
         <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-50 to-primary-100 items-center justify-center p-8">
           <div className="text-center">
             <img
-              src="/Image831/全渠道平台登录页插画设计.png"
+              src={images.loginIllustration}
               alt="AI全渠道内容生成平台"
               className="max-w-md mx-auto mb-6 rounded-lg shadow-2xl"
             />
