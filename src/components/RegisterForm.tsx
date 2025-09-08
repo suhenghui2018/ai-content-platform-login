@@ -4,9 +4,10 @@ import { userService } from '../services/userService';
 
 interface RegisterFormProps {
   onModeChange: (mode: 'login' | 'register') => void;
+  onRegisterSuccess?: () => void;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ onModeChange }) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ onModeChange, onRegisterSuccess }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     email: '',
@@ -57,7 +58,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onModeChange }) => {
       
       if (result.success) {
         alert(result.message);
-        onModeChange('login');
+        // 如果提供了注册成功回调，则调用它
+        if (onRegisterSuccess) {
+          onRegisterSuccess();
+        } else {
+          onModeChange('login');
+        }
       } else {
         alert(result.message);
       }

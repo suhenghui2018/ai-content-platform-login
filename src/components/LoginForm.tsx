@@ -4,9 +4,10 @@ import { userService } from '../services/userService';
 
 interface LoginFormProps {
   onModeChange: (mode: 'login' | 'register') => void;
+  onLoginSuccess?: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onModeChange }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onModeChange, onLoginSuccess }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     email: '',
@@ -52,7 +53,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onModeChange }) => {
       
       if (result.success) {
         alert(result.message);
-        // 这里可以添加登录成功后的跳转逻辑
+        // 登录成功后跳转到平台
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
       } else {
         alert(result.message);
       }
