@@ -28,8 +28,14 @@ const TestCredentials: React.FC = () => {
                   radica123
                 </code>
               </div>
+              <div>
+                <span className="font-medium">驗證碼:</span>
+                <code className="ml-2 bg-blue-800 px-2 py-1 rounded text-xs">
+                  1234
+                </code>
+              </div>
               <div className="text-xs text-blue-200 mt-2">
-                點擊複製到剪貼板
+                請確保輸入正確的驗證碼 "1234"
               </div>
             </div>
           </div>

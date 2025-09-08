@@ -45,13 +45,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ onModeChange, onLoginSuccess }) =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    console.log('表单提交，数据:', formData);
+    
+    if (!validateForm()) {
+      console.log('表单验证失败');
+      return;
+    }
 
+    console.log('表单验证通过');
     setIsLoading(true);
     
     // 使用用户服务验证登录
     try {
       const result = userService.validateLogin(formData.email, formData.password);
+      console.log('登录验证结果:', result);
       
       if (result.success) {
         console.log('登录成功，准备跳转...');
@@ -68,6 +75,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onModeChange, onLoginSuccess }) =
         alert(result.message);
       }
     } catch (error) {
+      console.error('登录过程中发生错误:', error);
       alert(t('loginError'));
     } finally {
       setIsLoading(false);
