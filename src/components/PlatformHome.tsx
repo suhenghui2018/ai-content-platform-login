@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import LanguageSelector from './LanguageSelector';
-import UserProfile from './UserProfile';
+// import UserProfile from './UserProfile';
 import BrandPackCard from './BrandPackCard';
 import BrandPackList from './BrandPackList';
 import CreateBrandPackModal from './CreateBrandPackModal';
 import { BrandPack, CreateBrandPackData } from '../types/brandPack';
-import { getBrandPacks, toggleBrandPackStatus, createBrandPack } from '../utils/brandPackData';
+import { getBrandPacks, createBrandPack } from '../utils/brandPackData';
 
 interface PlatformHomeProps {
   onLogout: () => void;
@@ -15,7 +15,7 @@ interface PlatformHomeProps {
 
 type MenuItem = 'home' | 'contentPack' | 'app' | 'brandPack' | 'contentReview' | 'dataAnalysis' | 'platformSettings' | 'accountSettings';
 
-const PlatformHome: React.FC<PlatformHomeProps> = ({ onLogout }) => {
+const PlatformHome: React.FC<PlatformHomeProps> = ({ onLogout: _onLogout }) => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeMenu, setActiveMenu] = useState<MenuItem>('home');
@@ -405,7 +405,7 @@ const PlatformHome: React.FC<PlatformHomeProps> = ({ onLogout }) => {
         
         {/* 账号信息 */}
         <div className="p-4 border-t border-gray-100 bg-gray-50">
-          <UserProfile onLogout={onLogout} />
+          {/* <UserProfile onLogout={onLogout} /> */}
         </div>
       </div>
 

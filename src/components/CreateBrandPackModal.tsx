@@ -82,8 +82,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   const [showUserClickBubble, setShowUserClickBubble] = useState(false);
   const [showAILoadingResponse, setShowAILoadingResponse] = useState(false);
   const [showBrandPackDescription, setShowBrandPackDescription] = useState(false);
-  const [showBrandPackResult, setShowBrandPackResult] = useState(false);
-  const [showModificationOption, setShowModificationOption] = useState(false);
+  const [showBrandPackResult] = useState(false);
+  const [showModificationOption] = useState(false);
 
   // 6个部分的气泡显示状态
   const [showBrandCoreIdentity, setShowBrandCoreIdentity] = useState(false);
@@ -272,7 +272,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   };
 
   // GODIVA品牌详细数据 - 6个部分
-  const godivaDetailedData = {
+  // const godivaDetailedData = {
+  /*
     brandCoreIdentity: {
       brandName: 'GODIVA Chocolatier',
       brandSlogan: '"Any Moment, A GODIVA Moment" (任何时刻，都是GODIVA时刻)',
@@ -334,6 +335,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
       scenarioKeywords: ['节日礼物', '商务礼品', '婚礼喜糖', '下午茶']
     }
   };
+  */
   
   // 分析步骤配置
   const analysisSteps = [
@@ -664,12 +666,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   }, [contentProductData]);
 
   // 处理SEO数据更新
-  const handleSeoChange = (field: string, value: any) => {
-    setSeoData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  // const handleSeoChange = (field: string, value: any) => {
+  //   setSeoData(prev => ({
+  //     ...prev,
+  //     [field]: value
+  //   }));
+  // };
 
   // 处理SEO关键词添加
   const handleAddSeoKeyword = (type: 'brandKeywords' | 'productKeywords' | 'industryKeywords', newKeyword: string) => {
@@ -738,12 +740,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   };
 
   // 处理目标受众画像数据更新
-  const handleTargetAudienceChange = (field: string, value: any) => {
-    setTargetAudienceData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  // const handleTargetAudienceChange = (field: string, value: any) => {
+  //   setTargetAudienceData(prev => ({
+  //     ...prev,
+  //     [field]: value
+  //   }));
+  // };
 
   // 处理单行文本数组添加
   const handleAddSingleText = (field: string, newText: string) => {
@@ -800,12 +802,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   };
 
   // 计算文本行数并设置textarea高度
-  const calculateTextareaHeight = (text: string, minHeight: number = 20) => {
-    if (!text) return minHeight;
-    const lines = text.split('\n').length;
-    const estimatedHeight = Math.max(lines * 20, minHeight);
-    return Math.min(estimatedHeight, 120); // 最大高度限制为120px
-  };
+  // const calculateTextareaHeight = (text: string, minHeight: number = 20) => {
+  //   if (!text) return minHeight;
+  //   const lines = text.split('\n').length;
+  //   const estimatedHeight = Math.max(lines * 20, minHeight);
+  //   return Math.min(estimatedHeight, 120); // 最大高度限制为120px
+  // };
 
   // 处理气泡折叠/展开
   const toggleBubbleCollapse = (bubbleType: string) => {
@@ -1045,21 +1047,21 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
     setCurrentStep('basic');
   };
 
-  const handleNextStep = () => {
-    const steps = ['basic', 'analysis', 'ai-result', 'modify', 'confirm'];
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1] as any);
-    }
-  };
+  // const handleNextStep = () => {
+  //   const steps = ['basic', 'analysis', 'ai-result', 'modify', 'confirm'];
+  //   const currentIndex = steps.indexOf(currentStep);
+  //   if (currentIndex < steps.length - 1) {
+  //     setCurrentStep(steps[currentIndex + 1] as any);
+  //   }
+  // };
 
-  const handlePrevStep = () => {
-    const steps = ['basic', 'analysis', 'ai-result', 'modify', 'confirm'];
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1] as any);
-    }
-  };
+  // const handlePrevStep = () => {
+  //   const steps = ['basic', 'analysis', 'ai-result', 'modify', 'confirm'];
+  //   const currentIndex = steps.indexOf(currentStep);
+  //   if (currentIndex > 0) {
+  //     setCurrentStep(steps[currentIndex - 1] as any);
+  //   }
+  // };
 
   const handleFormInputChange = (field: string, value: string | string[]) => {
     setFormData(prev => ({
