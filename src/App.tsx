@@ -25,6 +25,7 @@ function LoginPage() {
   };
 
   const handleLoginSuccess = () => {
+    console.log('handleLoginSuccess被调用，准备跳转到/dashboard');
     navigate('/dashboard');
   };
 
@@ -118,6 +119,7 @@ function DashboardPage() {
     navigate('/');
   };
 
+  console.log('DashboardPage组件被渲染');
   return <PlatformHome onLogout={handleLogout} />;
 }
 

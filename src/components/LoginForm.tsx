@@ -34,6 +34,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onModeChange, onLoginSuccess }) =
 
     if (!formData.captcha) {
       newErrors.captcha = t('captchaRequired');
+    } else if (formData.captcha !== '1234') {
+      newErrors.captcha = '驗證碼錯誤';
     }
 
     setErrors(newErrors);
@@ -52,12 +54,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onModeChange, onLoginSuccess }) =
       const result = userService.validateLogin(formData.email, formData.password);
       
       if (result.success) {
+        console.log('登录成功，准备跳转...');
         alert(result.message);
         // 登录成功后跳转到平台
         if (onLoginSuccess) {
+          console.log('调用onLoginSuccess回调...');
           onLoginSuccess();
+        } else {
+          console.log('onLoginSuccess回调未定义');
         }
       } else {
+        console.log('登录失败:', result.message);
         alert(result.message);
       }
     } catch (error) {
