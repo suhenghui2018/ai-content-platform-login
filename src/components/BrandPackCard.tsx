@@ -6,13 +6,15 @@ interface BrandPackCardProps {
   onToggleStatus: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onViewDetail?: (brandPack: BrandPack) => void;
 }
 
 const BrandPackCard: React.FC<BrandPackCardProps> = ({ 
   brandPack, 
   onToggleStatus, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onViewDetail
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -35,6 +37,12 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
     setShowMenu(false);
   };
 
+  const handleCardClick = () => {
+    if (onViewDetail) {
+      onViewDetail(brandPack);
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -49,13 +57,19 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
   }, []);
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+    <div 
+      className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group cursor-pointer"
+      onClick={handleCardClick}
+    >
       {/* 品牌包Logo和状态 */}
       <div className="relative p-6 bg-gradient-to-br from-gray-50 to-gray-100">
         {/* 右上角操作菜单 */}
         <div className="absolute top-4 right-4" ref={menuRef}>
           <button
-            onClick={() => setShowMenu(!showMenu)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
             className="w-8 h-8 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center text-gray-600 hover:text-gray-900 transition-all duration-200"
           >
             <span className="text-lg">⋯</span>
@@ -107,7 +121,10 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
                 {brandPack.isEnabled ? '已启用' : '已禁用'}
               </span>
               <button
-                onClick={handleToggle}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggle();
+                }}
                 className={`w-12 h-6 rounded-full transition-colors duration-200 ${
                   brandPack.isEnabled ? 'bg-primary-500' : 'bg-gray-300'
                 }`}
@@ -159,6 +176,12 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
                 {brandPack.sharedBy ? `分享自 ${brandPack.sharedBy}` : '创建者'}
               </p>
             </div>
+          </div>
+          <div className="flex items-center text-primary-600 text-sm font-medium group-hover:text-primary-700 transition-colors">
+            查看详情
+            <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </div>
           <div className="text-right">
             <p className="text-xs text-gray-500">创建时间</p>

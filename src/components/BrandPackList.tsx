@@ -6,13 +6,15 @@ interface BrandPackListProps {
   onToggleStatus: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onViewDetail?: (brandPack: BrandPack) => void;
 }
 
 const BrandPackList: React.FC<BrandPackListProps> = ({ 
   brandPack, 
   onToggleStatus, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onViewDetail
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -35,6 +37,12 @@ const BrandPackList: React.FC<BrandPackListProps> = ({
     setShowMenu(false);
   };
 
+  const handleItemClick = () => {
+    if (onViewDetail) {
+      onViewDetail(brandPack);
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -49,11 +57,17 @@ const BrandPackList: React.FC<BrandPackListProps> = ({
   }, []);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 p-4 group relative">
+    <div 
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 p-4 group relative cursor-pointer"
+      onClick={handleItemClick}
+    >
       {/* 右上角操作菜单 */}
       <div className="absolute top-3 right-3" ref={menuRef}>
         <button
-          onClick={() => setShowMenu(!showMenu)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+          }}
           className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-all duration-200"
         >
           <span className="text-sm">⋯</span>

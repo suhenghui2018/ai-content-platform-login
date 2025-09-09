@@ -6,6 +6,7 @@ import LanguageSelector from './LanguageSelector';
 import BrandPackCard from './BrandPackCard';
 import BrandPackList from './BrandPackList';
 import CreateBrandPackModal from './CreateBrandPackModal';
+import BrandPackDetail from './BrandPackDetail';
 import { BrandPack, CreateBrandPackData } from '../types/brandPack';
 import { getBrandPacks, createBrandPack } from '../utils/brandPackData';
 
@@ -22,6 +23,7 @@ const PlatformHome: React.FC<PlatformHomeProps> = ({ onLogout: _onLogout }) => {
   const [brandPacks, setBrandPacks] = useState<BrandPack[]>(getBrandPacks());
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedBrandPack, setSelectedBrandPack] = useState<BrandPack | null>(null);
 
   // 从URL参数中恢复菜单状态
   useEffect(() => {
@@ -77,6 +79,14 @@ const PlatformHome: React.FC<PlatformHomeProps> = ({ onLogout: _onLogout }) => {
     if (window.confirm('确定要删除这个品牌包吗？')) {
       setBrandPacks(prevPacks => prevPacks.filter(pack => pack.id !== id));
     }
+  };
+
+  const handleViewBrandPackDetail = (brandPack: BrandPack) => {
+    setSelectedBrandPack(brandPack);
+  };
+
+  const handleBackToBrandPackList = () => {
+    setSelectedBrandPack(null);
   };
 
   const renderContent = () => {
@@ -173,6 +183,16 @@ const PlatformHome: React.FC<PlatformHomeProps> = ({ onLogout: _onLogout }) => {
           </div>
         );
       case 'brandPack':
+        // 如果选择了品牌包，显示详情页面
+        if (selectedBrandPack) {
+          return (
+            <BrandPackDetail
+              brandPack={selectedBrandPack}
+              onBack={handleBackToBrandPackList}
+            />
+          );
+        }
+        
         return (
           <div className="p-8 h-full">
             <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 h-full flex flex-col">
@@ -251,6 +271,7 @@ const PlatformHome: React.FC<PlatformHomeProps> = ({ onLogout: _onLogout }) => {
                           onToggleStatus={handleToggleBrandPack}
                           onEdit={handleEditBrandPack}
                           onDelete={handleDeleteBrandPack}
+                          onViewDetail={handleViewBrandPackDetail}
                         />
                       ) : (
                         <BrandPackList
@@ -259,6 +280,7 @@ const PlatformHome: React.FC<PlatformHomeProps> = ({ onLogout: _onLogout }) => {
                           onToggleStatus={handleToggleBrandPack}
                           onEdit={handleEditBrandPack}
                           onDelete={handleDeleteBrandPack}
+                          onViewDetail={handleViewBrandPackDetail}
                         />
                       )
                     ))}
