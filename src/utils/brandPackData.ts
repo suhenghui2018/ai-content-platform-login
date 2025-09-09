@@ -11,19 +11,8 @@ export const mockBrandPacks: BrandPack[] = [
     creatorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=zhangsan&backgroundColor=b6e3f4&size=40',
     description: 'Radica AI驱动的全渠道营销自动化平台品牌包，专为营销科技行业设计，包含智能化、专业化的视觉元素和现代化设计风格',
     tags: ['AI', '营销自动化', '全渠道', '智能化']
-  },
-  {
-    id: '2',
-    name: 'Godiva品牌包',
-    logo: '/Image831/logo/godiva.jpeg',
-    createdAt: '2024-01-20',
-    isEnabled: false,
-    creator: '李四',
-    creatorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lisi&backgroundColor=fbbf24&size=40',
-    description: 'Godiva巧克力品牌包，奢华精致的巧克力品牌视觉系统，适合高端食品和奢侈品行业',
-    tags: ['巧克力', '奢华', '精致', '高端'],
-    sharedBy: '王五'
   }
+  // Godiva品牌包已删除，用户需要先创建品牌包
 ];
 
 export const getBrandPacks = (): BrandPack[] => {
