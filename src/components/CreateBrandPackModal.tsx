@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CreateBrandPackData } from '../types/brandPack';
+import ServiceAgreementModal from './ServiceAgreementModal';
 
 interface CreateBrandPackModalProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   onCreate,
   fullscreen = false
 }) => {
+  const { t, i18n } = useTranslation();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState<'select' | 'main' | 'generating' | 'result'>('select');
@@ -36,7 +39,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
     industry: '',
     targetUsers: '',
     brandFeatures: '',
-    useCases: [] as string[]
+    useCases: [] as string[],
+    tags: [] as string[]
   });
 
   const [step2Data, setStep2Data] = useState({
@@ -177,6 +181,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   // Toast提示状态
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [showAgreement, setShowAgreement] = useState(false);
+  const [agreementType, setAgreementType] = useState<'ai' | 'traditional'>('traditional');
 
   // 自定义色彩系统弹窗状态
   const [showCustomColorModal, setShowCustomColorModal] = useState(false);
@@ -337,15 +343,27 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   };
   */
   
-  // 分析步骤配置
-  const analysisSteps = [
-    '正在分析上传的文档...',
-    '正在分析网址内容...',
-    '正在分析社交媒体...',
-    '正在分析文字内容...',
-    '正在分析知识库...',
-    '完成分析，正在生成结果中...'
-  ];
+  // 分析步骤配置 - 使用useState以便在语言变化时更新
+  const [analysisSteps, setAnalysisSteps] = useState([
+    t('analyzingUploadedDocuments'),
+    t('analyzingUrlContent'),
+    t('analyzingSocialMedia'),
+    t('analyzingTextContent'),
+    t('analyzingKnowledgeBase'),
+    t('analysisCompleteGeneratingResults')
+  ]);
+
+  // 监听语言变化，更新分析步骤
+  useEffect(() => {
+    setAnalysisSteps([
+      t('analyzingUploadedDocuments'),
+      t('analyzingUrlContent'),
+      t('analyzingSocialMedia'),
+      t('analyzingTextContent'),
+      t('analyzingKnowledgeBase'),
+      t('analysisCompleteGeneratingResults')
+    ]);
+  }, [i18n.language, t]);
 
   // 自动滚动到聊天底部
   const scrollToBottom = () => {
@@ -949,11 +967,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
       // 延迟1秒后开始显示欢迎消息
       setTimeout(() => {
         setShowWelcomeMessage(true);
-        typeWelcomeText('你好，欢迎使用AI品牌包生成助手！我将帮助您创建专业的品牌包。', () => {
+        typeWelcomeText(t('aiWelcomeMessage'), () => {
           // 欢迎消息完成后，延迟1秒显示引导消息
           setTimeout(() => {
             setShowGuideMessage(true);
-            typeGuideText('请填写基本信息表单，包括品牌包名称、描述和访问权限：', () => {
+            typeGuideText(t('pleaseFillBasicInfo'), () => {
               // 引导消息完成后，可以开始交互
             });
           }, 1000);
@@ -972,7 +990,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
     
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) {
-      newErrors.name = '品牌包名称不能为空';
+      newErrors.name = t('brandPackNameRequired');
     }
     
     setErrors(newErrors);
@@ -981,18 +999,9 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
       if (creationMethod === 'ai') {
         handleAIGeneration();
       } else {
-        onCreate(formData);
-        setFormData({ 
-      name: '', 
-      description: '', 
-      logo: '',
-      access: 'public',
-      industry: '',
-      targetUsers: '',
-      brandFeatures: '',
-      useCases: []
-    });
-        onClose();
+        // 显示服务协议弹窗
+        setAgreementType('traditional');
+        setShowAgreement(true);
       }
     }
   };
@@ -1017,6 +1026,22 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   };
 
   const handleConfirmGeneration = () => {
+    // 显示服务协议弹窗
+    setAgreementType('ai');
+    setShowAgreement(true);
+  };
+
+  const handleAgreementAgree = () => {
+    // 根据协议类型调用不同的处理函数
+    if (agreementType === 'ai') {
+      handleTraditionalAgreementAgree(); // AI创建方式使用传统处理
+    } else {
+      handleTraditionalAgreementAgree(); // 传统创建方式
+    }
+  };
+
+  const handleTraditionalAgreementAgree = () => {
+    // 传统创建方式的协议同意处理
     onCreate(formData);
     setFormData({ 
       name: '', 
@@ -1026,10 +1051,15 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
       industry: '',
       targetUsers: '',
       brandFeatures: '',
-      useCases: []
+      useCases: [],
+      tags: []
     });
-    setGenerationStep('main');
+    setShowAgreement(false);
     onClose();
+  };
+
+  const handleAgreementClose = () => {
+    setShowAgreement(false);
   };
 
   const handleRegenerate = () => {
@@ -1150,7 +1180,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
     setTimeout(() => {
       setChatStep('analysis');
       setShowAIAnalysis(true);
-      typeText('很好！现在请填写品牌素材信息输入表单，提供更多品牌资料，帮助我更好地理解您的品牌需求。请选择以下方式提供信息：', () => {
+      typeText(t('brandMaterialInputDesc'), () => {
         // 打字完成后可以继续下一步
       });
     }, 5000);
@@ -1158,11 +1188,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
   const renderProgressSteps = () => {
     const steps = [
-      { key: 'basic', label: '基本信息表单' },
-      { key: 'analysis', label: '品牌素材信息输入' },
-      { key: 'ai-generating', label: 'AI生成中' },
-      { key: 'ai-result', label: '查看AI生成结果' },
-      { key: 'confirm', label: '确认内容' }
+      { key: 'basic', label: t('basicInformationForm') },
+      { key: 'analysis', label: t('step2BrandMaterialInput') },
+      { key: 'ai-generating', label: t('step3AIGenerating') },
+      { key: 'ai-result', label: t('step4ViewAIResult') },
+      { key: 'confirm', label: t('step5ConfirmContent') }
     ];
 
     const currentStepIndex = steps.findIndex(step => step.key === currentStep);
@@ -1209,8 +1239,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   <span className="text-white text-sm">🤖</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">AI品牌包生成助手</h3>
-                  <p className="text-sm text-gray-600">智能对话式品牌包创建</p>
+                  <h3 className="text-lg font-semibold text-gray-900">{t('aiBrandPackGenerationAssistant')}</h3>
+                  <p className="text-sm text-gray-600">{t('intelligentConversationalBrandPackCreation')}</p>
                 </div>
               </div>
             </div>
@@ -1226,7 +1256,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 shadow-sm max-w-sm">
                     <p className="text-sm text-gray-800">
                       {welcomeText}
-                      {welcomeText.length > 0 && welcomeText.length < '你好，欢迎使用AI品牌包生成助手！我将帮助您创建专业的品牌包。'.length && (
+                      {welcomeText.length > 0 && welcomeText.length < t('aiWelcomeMessage').length && (
                         <span className="animate-pulse">|</span>
                       )}
                     </p>
@@ -1252,18 +1282,18 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
                       {/* 基本信息表单标题 */}
                       <div className="border-b border-gray-200 pb-3 mb-4">
-                        <h4 className="text-sm font-medium text-gray-900">基本信息表单</h4>
-                        <p className="text-xs text-gray-600 mt-1">请填写品牌包的基本信息</p>
+                        <h4 className="text-sm font-medium text-gray-900">{t('basicInformationForm')}</h4>
+                        <p className="text-xs text-gray-600 mt-1">{t('pleaseFillBasicInfo')}</p>
                       </div>
                     
                     {/* 品牌包名称 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        品牌包名称 <span className="text-red-500">*</span>
+                        {t('brandPackName')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                        placeholder="请输入品牌包名称..."
+                        placeholder={t('pleaseEnterBrandPackName')}
                         value={formData.name}
                         onChange={(e) => handleFormInputChange('name', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -1274,10 +1304,10 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                     {/* 品牌包概述 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        品牌包概述 <span className="text-red-500">*</span>
+                        {t('brandPackOverview')} <span className="text-red-500">*</span>
                       </label>
                       <textarea
-                        placeholder="请输入品牌包的详细描述..."
+                        placeholder={t('enterBrandPackDescription')}
                         rows={3}
                         value={formData.description}
                         onChange={(e) => handleFormInputChange('description', e.target.value)}
@@ -1286,7 +1316,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       <div className="flex justify-between items-center mt-1">
                         <button className="text-xs text-primary-600 hover:text-primary-700 flex items-center">
                           <span className="mr-1">⚡</span>
-                          生成描述
+                          {t('generateDescription')}
                         </button>
                         <div className="text-xs text-gray-500">{formData.description?.length || 0}/500</div>
                       </div>
@@ -1294,7 +1324,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                     {/* 访问权限设置 */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">访问权限</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('accessPermissions')}</label>
                       <div className="space-y-2">
                         <label className="flex items-start">
                           <input
@@ -1306,8 +1336,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                             className="mt-1 mr-2"
                           />
                           <div>
-                            <div className="text-xs font-medium text-gray-900">工作区中的任何人</div>
-                            <div className="text-xs text-gray-500">工作区中的任何人都可以使用此品牌包</div>
+                            <div className="text-xs font-medium text-gray-900">{t('anyoneInWorkspace')}</div>
+                            <div className="text-xs text-gray-500">{t('anyoneInWorkspaceDesc')}</div>
                           </div>
                         </label>
                         <label className="flex items-start">
@@ -1320,8 +1350,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                             className="mt-1 mr-2"
                           />
                           <div>
-                            <div className="text-xs font-medium text-gray-900">仅限我</div>
-                            <div className="text-xs text-gray-500">只有您可以访问和使用此品牌包</div>
+                            <div className="text-xs font-medium text-gray-900">{t('onlyMe')}</div>
+                            <div className="text-xs text-gray-500">{t('onlyMeDesc')}</div>
                           </div>
                         </label>
                       </div>
@@ -1334,7 +1364,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         disabled={!formData.name.trim() || !formData.description?.trim()}
                         className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
                       >
-                        保存并下一步
+                        {t('saveAndNextStep')}
                       </button>
                     </div>
                     </div> {/* 表单卡片结束 */}
@@ -1346,7 +1376,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               {showUserReply && (
                 <div className="flex items-start space-x-3 justify-end">
                   <div className="bg-primary-600 text-white rounded-lg p-3 shadow-sm max-w-sm">
-                    <p className="text-sm">好的，我已经填写了基本信息，请继续下一步。</p>
+                    <p className="text-sm">{t('userReplyBasicInfoCompleted')}</p>
                   </div>
                   <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-gray-600 text-sm">👤</span>
@@ -1368,8 +1398,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <span className="animate-pulse">|</span>
                         </span>
                       ) : (
-                        '很好！现在请提供更多分析信息，帮助我更好地理解您的品牌需求。请选择以下方式提供信息：'
-                      )}
+                          t('aiAnalysisRequestMoreInfo')
+                        )}
                     </p>
                     
                     {/* 第二步表单 - 在analysis和ai-result步骤都显示 */}
@@ -1378,8 +1408,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         <div className="space-y-6">
                           {/* 输入方式选择 - 参考图片样式 */}
                           <div className="space-y-3">
-                            <h4 className="text-sm font-medium text-gray-900">品牌素材信息输入</h4>
-                            <p className="text-xs text-gray-600">通过提供文档、文字、社交媒体等信息让AI更全面的了解的品牌风格</p>
+                            <h4 className="text-sm font-medium text-gray-900">{t('brandMaterialInputTitle')}</h4>
+                            <p className="text-xs text-gray-600">{t('aiAnalysisRequestMoreInfo')}</p>
                           
                           {/* 输入方式按钮组 */}
                           <div className="flex space-x-1 flex-wrap">
@@ -1391,7 +1421,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                             >
-                              上传文件
+                              {t('uploadFile')}
                             </button>
                             <button 
                               onClick={() => setSelectedInputMethod('paste')}
@@ -1401,7 +1431,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                             >
-                              粘贴文字
+                              {t('pasteText')}
                             </button>
                             <button 
                               onClick={() => setSelectedInputMethod('url')}
@@ -1411,7 +1441,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                             >
-                              添加网址
+                              {t('addWebsite')}
                             </button>
                             <button 
                               onClick={() => setSelectedInputMethod('social')}
@@ -1421,7 +1451,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                             >
-                              社交媒体
+                              {t('socialMedia')}
                             </button>
                             <button 
                               onClick={() => setSelectedInputMethod('knowledge')}
@@ -1431,7 +1461,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                               }`}
                             >
-                              知识库
+                              {t('knowledgeBase')}
                             </button>
                           </div>
                         </div>
@@ -1461,7 +1491,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                               >
                                 <div className="space-y-2">
                                   <p className="text-sm font-medium text-gray-700">
-                                    拖拽文件到此处或 <span className="text-blue-600 underline">浏览</span>
+                                    {t('dragFilesHere')} <span className="text-blue-600 underline">{t('browse')}</span>
                                   </p>
                                   <div className="flex justify-center space-x-4 text-xs text-gray-500">
                                     <div className="flex items-center space-x-1">
@@ -1487,10 +1517,10 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           {selectedInputMethod === 'paste' && (
                             <div className="space-y-3">
                               <label className="block text-sm font-medium text-gray-700">
-                                粘贴文字内容
+                                {t('pasteTextContent')}
                               </label>
                               <textarea
-                                placeholder="请粘贴您的文字内容到这里..."
+                                placeholder={t('pasteTextPlaceholder')}
                                 value={step2Data.textContent}
                                 onChange={(e) => handleStep2InputChange('textContent', e.target.value)}
                                 rows={8}
@@ -1508,7 +1538,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   disabled={!step2Data.textContent.trim()}
                                   className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  添加文字
+                                  {t('addText')}
                                 </button>
                               </div>
                             </div>
@@ -1519,23 +1549,23 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                             <div className="space-y-4">
                               <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700">
-                                  网站链接
+                                  {t('websiteLink')}
                                 </label>
                                 <input
                                   type="url"
-                                  placeholder="粘贴网址"
+                                  placeholder={t('pasteWebsitePlaceholder')}
                                   value={tempWebsite}
                                   onChange={(e) => setTempWebsite(e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                                 />
-                                <p className="text-xs text-gray-500">请提供有效的网页链接。</p>
+                                <p className="text-xs text-gray-500">{t('provideValidWebLink')}</p>
                                 <div className="flex justify-end">
                                   <button 
                                     onClick={addWebsite}
                                     disabled={!tempWebsite.trim()}
                                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
-                                    添加网址
+                                    {t('addWebsite')}
                                   </button>
                                 </div>
                               </div>
@@ -1547,23 +1577,23 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                             <div className="space-y-4">
                               <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700">
-                                  社交媒体
+                                  {t('socialMedia')}
                                 </label>
                                 <input
                                   type="text"
-                                  placeholder="请输入平台名称，平台主页地址（如：Facebook，https://facebook.com/yourpage）"
+                                  placeholder={t('socialMediaPlaceholder')}
                                   value={tempSocialMedia}
                                   onChange={(e) => setTempSocialMedia(e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                                 />
-                                <p className="text-xs text-gray-500">请按照"平台名称，主页地址"的格式输入。</p>
+                                <p className="text-xs text-gray-500">{t('socialMediaFormatHint')}</p>
                                 <div className="flex justify-end">
                                   <button 
                                     onClick={addSocialMedia}
                                     disabled={!tempSocialMedia.trim()}
                                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
-                                    添加社交媒体
+                                    {t('addSocialMedia')}
                                   </button>
                                 </div>
                               </div>
@@ -1573,11 +1603,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           {/* 知识库方式 - 参考图片样式 */}
                           {selectedInputMethod === 'knowledge' && (
                             <div className="space-y-3">
-                              <h4 className="text-sm font-medium text-gray-900">知识库</h4>
+                              <h4 className="text-sm font-medium text-gray-900">{t('knowledgeBase')}</h4>
                               <div className="bg-gray-100 rounded-lg p-4">
                                 <input
                                   type="text"
-                                  placeholder="按名称、描述或标签搜索"
+                                  placeholder={t('searchByNameDescriptionOrTags')}
                                   value={step2Data.knowledgeBase[0] || ''}
                                   onChange={(e) => handleStep2InputChange('knowledgeBase', e.target.value ? [e.target.value] : [])}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm bg-white"
@@ -1589,7 +1619,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         
                         {/* 已添加文档区域 - 优化设计 */}
                         <div className="space-y-3">
-                          <h4 className="text-sm font-bold text-gray-900">已添加文档</h4>
+                          <h4 className="text-sm font-bold text-gray-900">{t('addedDocuments')}</h4>
                           <div className="space-y-3">
                             {/* 已上传文件列表 */}
                             {uploadedFiles.length > 0 && (
@@ -1633,11 +1663,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-2">
-                                      <h5 className="text-sm font-medium text-gray-900">文字内容</h5>
+                                      <h5 className="text-sm font-medium text-gray-900">{t('textContent')}</h5>
                                       <button
                                         onClick={() => handleStep2InputChange('textContent', '')}
                                         className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all duration-200"
-                                        title="删除文字内容"
+                                        title={t('deleteTextContent')}
                                       >
                                         <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1653,8 +1683,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                       </p>
                                     </div>
                                     <p className="text-xs text-gray-500 mt-2">
-                                      字符数: {step2Data.textContent.length}/5000
-                                    </p>
+                                        {t('characterCount', { count: step2Data.textContent.length, max: 5000 })}
+                                      </p>
                                   </div>
                                 </div>
                               </div>
@@ -1669,11 +1699,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-2">
-                                      <h5 className="text-sm font-medium text-gray-900">网站链接</h5>
+                                      <h5 className="text-sm font-medium text-gray-900">{t('websiteLink')}</h5>
                                       <button
                                         onClick={() => handleStep2InputChange('website', '')}
                                         className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all duration-200"
-                                        title="删除网站链接"
+                                        title={t('deleteWebsiteLink')}
                                       >
                                         <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1704,11 +1734,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-2">
-                                      <h5 className="text-sm font-medium text-gray-900">社交媒体</h5>
+                                      <h5 className="text-sm font-medium text-gray-900">{t('socialMedia')}</h5>
                                       <button
                                         onClick={() => handleStep2InputChange('socialMedia', '')}
                                         className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all duration-200"
-                                        title="删除社交媒体"
+                                        title={t('deleteSocialMedia')}
                                       >
                                         <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1734,11 +1764,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-2">
-                                      <h5 className="text-sm font-medium text-gray-900">知识库内容</h5>
+                                      <h5 className="text-sm font-medium text-gray-900">{t('knowledgeBaseContent')}</h5>
                                       <button
                                         onClick={() => handleStep2InputChange('knowledgeBase', [])}
                                         className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all duration-200"
-                                        title="删除知识库内容"
+                                        title={t('deleteKnowledgeBaseContent')}
                                       >
                                         <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1768,7 +1798,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                 <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
                                   <span className="text-gray-400 text-lg">📁</span>
                                 </div>
-                                暂无已添加的内容
+                                {t('noAddedContent')}
                               </div>
                             )}
                           </div>
@@ -1793,7 +1823,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                               }}
                               className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm transition-colors"
                             >
-                              提交分析
+                              {t('submitAnalysis')}
                             </button>
                           </div>
                         )}
@@ -1813,7 +1843,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 shadow-sm max-w-sm">
                     <p className="text-sm text-gray-800 mb-3">
-                      AI正在分析你的内容...
+                      {t('aiAnalyzingContent')}
                     </p>
                     <div className="space-y-2">
                       {analysisSteps.map((step, index) => (
@@ -1843,14 +1873,14 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 shadow-sm max-w-sm">
                     <p className="text-sm text-gray-800 mb-3">
-                      太棒了！您的品牌包已经生成完成！🎉
+                      {t('brandPackGenerationComplete')}
                     </p>
                     <div className="flex justify-start">
                       <button
                         onClick={handleViewBrandPack}
                         className="px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 text-sm transition-colors"
                       >
-                        查看品牌包
+                        {t('viewBrandPack')}
                       </button>
                     </div>
                   </div>
@@ -1863,7 +1893,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                 <div className="flex items-start space-x-3 justify-end">
                   <div className="bg-blue-500 text-white rounded-lg p-3 shadow-sm max-w-sm">
                     <p className="text-sm">
-                      请打开生成后的品牌资料包
+                      {t('openGeneratedBrandPack')}
                     </p>
                   </div>
                   <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
@@ -1880,7 +1910,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 shadow-sm max-w-sm">
                     <p className="text-sm text-gray-800">
-                      基于您提供的品牌资料包框架，以及参考了搜索结果中关于GODIVA品牌的信息，我为您完善了这份针对GODIVA巧克力品牌的资料包文档。这份资料包旨在更好地引导AI生成符合GODIVA品牌调性的内容。
+                      {t('brandPackDescriptionText')}
                     </p>
                   </div>
                 </div>
@@ -1897,7 +1927,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       className="flex items-center justify-between cursor-pointer mb-3"
                       onClick={() => toggleBubbleCollapse('brandCoreIdentity')}
                     >
-                      <h4 className="text-sm font-bold text-gray-900">1. 品牌核心身份 (Brand Core Identity)</h4>
+                      <h4 className="text-sm font-bold text-gray-900">1. {t('brandCoreIdentity')} ({t('brandCoreIdentityEn')})</h4>
                       <svg 
                         className={`w-4 h-4 text-gray-500 transition-transform ${bubbleCollapsed.brandCoreIdentity ? 'rotate-180' : ''}`}
                         fill="none" 
@@ -1912,7 +1942,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm space-y-4">
                         {/* 品牌名称 - 标签属性 */}
                         <div>
-                          <label className="text-xs font-medium text-gray-700 mb-1 block">品牌名称</label>
+                          <label className="text-xs font-medium text-gray-700 mb-1 block">{t('brandName')}</label>
                           <div className="space-y-2">
                             {/* 现有标签 */}
                             <div className="flex flex-wrap gap-1">
@@ -1937,7 +1967,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                             <div className="flex gap-2">
                               <input
                                 type="text"
-                                placeholder="添加品牌名称"
+                                placeholder={t('addBrandName')}
                                 className="flex-1 text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                 onKeyPress={(e) => {
                                   if (e.key === 'Enter') {
@@ -1964,12 +1994,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                         {/* 品牌标语 - 多行文本框 */}
                         <div>
-                          <label className="text-xs font-medium text-gray-700 mb-1 block">品牌标语</label>
+                          <label className="text-xs font-medium text-gray-700 mb-1 block">{t('brandSlogan')}</label>
                           <textarea
                             value={brandCoreIdentityData.brandSlogan}
                             onChange={(e) => handleBrandCoreIdentityChange('brandSlogan', e.target.value)}
                             className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                            placeholder="请输入品牌标语"
+                            placeholder={t('enterBrandSlogan')}
                             style={{ minHeight: '60px', height: 'auto' }}
                             onInput={(e) => {
                               const target = e.target as HTMLTextAreaElement;
@@ -1981,16 +2011,16 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                         {/* 品牌故事与使命 */}
                         <div>
-                          <label className="text-xs font-medium text-gray-700 mb-2 block">品牌故事与使命</label>
+                          <label className="text-xs font-medium text-gray-700 mb-2 block">{t('brandStoryAndMission')}</label>
                           <div className="space-y-3">
                             {/* 故事 - 多行文本框 */}
                             <div>
-                              <label className="text-xs text-gray-600 mb-1 block">故事：</label>
+                              <label className="text-xs text-gray-600 mb-1 block">{t('story')}：</label>
                               <textarea
                                 value={brandCoreIdentityData.brandStory}
                                 onChange={(e) => handleBrandCoreIdentityChange('brandStory', e.target.value)}
                                 className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                                placeholder="请输入品牌故事"
+                                placeholder={t('enterBrandStory')}
                                 style={{ minHeight: '80px', height: 'auto' }}
                                 onInput={(e) => {
                                   const target = e.target as HTMLTextAreaElement;
@@ -2001,12 +2031,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                             </div>
                             {/* 使命 - 多行文本框 */}
                             <div>
-                              <label className="text-xs text-gray-600 mb-1 block">使命：</label>
+                              <label className="text-xs text-gray-600 mb-1 block">{t('mission')}：</label>
                               <textarea
                                 value={brandCoreIdentityData.brandMission}
                                 onChange={(e) => handleBrandCoreIdentityChange('brandMission', e.target.value)}
                                 className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                                placeholder="请输入品牌使命"
+                                placeholder={t('enterBrandMission')}
                                 style={{ minHeight: '60px', height: 'auto' }}
                                 onInput={(e) => {
                                   const target = e.target as HTMLTextAreaElement;
@@ -2020,16 +2050,16 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                         {/* 品牌价值观与关键词 */}
                         <div>
-                          <label className="text-xs font-medium text-gray-700 mb-2 block">品牌价值观与关键词</label>
+                          <label className="text-xs font-medium text-gray-700 mb-2 block">{t('brandValuesAndKeywords')}</label>
                           <div className="space-y-3">
                             {/* 核心价值观 - 多行文本框 */}
                             <div>
-                              <label className="text-xs text-gray-600 mb-1 block">核心价值观：</label>
+                              <label className="text-xs text-gray-600 mb-1 block">{t('coreValues')}：</label>
                               <textarea
                                 value={brandCoreIdentityData.brandValues}
                                 onChange={(e) => handleBrandCoreIdentityChange('brandValues', e.target.value)}
                                 className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                                placeholder="请输入核心价值观，用逗号分隔"
+                                placeholder={t('enterCoreValues')}
                                 style={{ minHeight: '40px', height: 'auto' }}
                                 onInput={(e) => {
                                   const target = e.target as HTMLTextAreaElement;
@@ -2040,7 +2070,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                             </div>
                             {/* 关联关键词 - 标签框 */}
                             <div>
-                              <label className="text-xs text-gray-600 mb-1 block">关联关键词：</label>
+                              <label className="text-xs text-gray-600 mb-1 block">{t('relatedKeywords')}：</label>
                               <div className="space-y-2">
                                 {/* 现有标签 */}
                                 <div className="flex flex-wrap gap-1">
@@ -2060,7 +2090,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                 <div className="flex space-x-2">
                                   <input
                                     type="text"
-                                    placeholder="添加关键词"
+                                    placeholder={t('addKeyword')}
                                     className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                     onKeyPress={(e) => {
                                       if (e.key === 'Enter') {
@@ -2095,7 +2125,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           onClick={() => handleSaveAndUpdate('brandCoreIdentity')}
                           className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700 transition-colors"
                         >
-                          保存并更新内容
+                          {t('saveAndUpdate')}
                         </button>
                       </div>
                     )}
@@ -2114,7 +2144,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       className="flex items-center justify-between cursor-pointer mb-3"
                       onClick={() => toggleBubbleCollapse('brandVoiceTone')}
                     >
-                      <h4 className="text-sm font-bold text-gray-900">2. 品牌声音与语调 (Brand Voice & Tone)</h4>
+                      <h4 className="text-sm font-bold text-gray-900">2. {t('brandVoiceTone')} ({t('brandVoiceToneEn')})</h4>
                       <svg 
                         className={`w-4 h-4 text-gray-500 transition-transform ${bubbleCollapsed.brandVoiceTone ? 'rotate-180' : ''}`}
                         fill="none" 
@@ -2129,12 +2159,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm space-y-4">
                       {/* 品牌个性描述 - 多行文本框 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">品牌个性描述</label>
+                        <label className="text-xs font-medium text-gray-700 mb-1 block">{t('brandPersonalityDescription')}</label>
                         <textarea
                           value={brandVoiceToneData.personality}
                           onChange={(e) => handleBrandVoiceToneChange('personality', e.target.value)}
                           className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                          placeholder="请输入品牌个性描述"
+                          placeholder={t('enterBrandPersonality')}
                           style={{ minHeight: '80px', height: 'auto' }}
                           onInput={(e) => {
                             const target = e.target as HTMLTextAreaElement;
@@ -2146,12 +2176,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 语调指南 - 多行文本框 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">语调指南</label>
+                        <label className="text-xs font-medium text-gray-700 mb-1 block">{t('toneGuide')}</label>
                         <textarea
                           value={brandVoiceToneData.toneGuide}
                           onChange={(e) => handleBrandVoiceToneChange('toneGuide', e.target.value)}
                           className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                          placeholder="请输入语调指南"
+                          placeholder={t('enterToneGuide')}
                           style={{ minHeight: '80px', height: 'auto' }}
                           onInput={(e) => {
                             const target = e.target as HTMLTextAreaElement;
@@ -2163,11 +2193,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 风格与词汇偏好 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">风格与词汇偏好</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('styleAndVocabularyPreferences')}</label>
                         <div className="space-y-3">
                           {/* 推荐使用 - 标签框 */}
                           <div>
-                            <label className="text-xs text-gray-600 mb-1 block">推荐使用：</label>
+                            <label className="text-xs text-gray-600 mb-1 block">{t('recommendedUsage')}：</label>
                             <div className="space-y-2">
                               {/* 现有标签 */}
                               <div className="flex flex-wrap gap-1">
@@ -2187,7 +2217,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                               <div className="flex space-x-2">
                                 <input
                                   type="text"
-                                  placeholder="添加推荐词汇"
+                                  placeholder={t('addRecommendedWord')}
                                   className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                   onKeyPress={(e) => {
                                     if (e.key === 'Enter') {
@@ -2214,7 +2244,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                           {/* 避免使用 - 标签框 */}
                           <div>
-                            <label className="text-xs text-gray-600 mb-1 block">避免使用：</label>
+                            <label className="text-xs text-gray-600 mb-1 block">{t('avoidUsage')}：</label>
                             <div className="space-y-2">
                               {/* 现有标签 */}
                               <div className="flex flex-wrap gap-1">
@@ -2234,7 +2264,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                               <div className="flex space-x-2">
                                 <input
                                   type="text"
-                                  placeholder="添加避免词汇"
+                                  placeholder={t('addAvoidedWord')}
                                   className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                   onKeyPress={(e) => {
                                     if (e.key === 'Enter') {
@@ -2269,7 +2299,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           onClick={() => handleSaveAndUpdate('brandVoiceTone')}
                           className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700 transition-colors"
                         >
-                          保存并更新内容
+                          {t('saveAndUpdate')}
                         </button>
                       </div>
                     )}
@@ -2288,7 +2318,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       className="flex items-center justify-between cursor-pointer mb-3"
                       onClick={() => toggleBubbleCollapse('targetAudience')}
                     >
-                      <h4 className="text-sm font-bold text-gray-900">3. 目标受众画像 (Target Audience Persona)</h4>
+                      <h4 className="text-sm font-bold text-gray-900">{t('stepNumber', { number: 3 })} {t('targetAudiencePersona')} ({t('targetAudiencePersonaEn')})</h4>
                       <svg 
                         className={`w-4 h-4 text-gray-500 transition-transform ${bubbleCollapsed.targetAudience ? 'rotate-180' : ''}`}
                         fill="none" 
@@ -2303,7 +2333,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm space-y-4">
                       {/* 人口统计 - 单行文本数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">人口统计</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('demographics')}</label>
                         <div className="space-y-2">
                           {/* 现有标签 */}
                           <div className="flex flex-wrap gap-1">
@@ -2325,7 +2355,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex space-x-2">
                             <input
                               type="text"
-                              placeholder="添加人口统计信息"
+                              placeholder={t('addDemographicInfo')}
                               className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -2352,9 +2382,9 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 性别属性 - 多选 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">性别属性</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('genderAttribute')}</label>
                         <div className="flex flex-wrap gap-2">
-                          {['男性', '女性', '男女皆可', '无性别限制'].map((gender) => (
+                          {[t('male'), t('female'), t('bothGenders'), t('noGenderRestriction')].map((gender) => (
                             <label key={gender} className="flex items-center space-x-1 cursor-pointer">
                               <input
                                 type="checkbox"
@@ -2370,7 +2400,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 收入属性 - 单行文本数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">收入属性</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('incomeAttribute')}</label>
                         <div className="space-y-2">
                           {/* 现有标签 */}
                           <div className="flex flex-wrap gap-1">
@@ -2392,7 +2422,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex space-x-2">
                             <input
                               type="text"
-                              placeholder="添加收入属性"
+                              placeholder={t('addIncomeAttribute')}
                               className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -2419,7 +2449,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 生活品质 - 单行文本数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">生活品质</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('lifestyle')}</label>
                         <div className="space-y-2">
                           {/* 现有标签 */}
                           <div className="flex flex-wrap gap-1">
@@ -2441,7 +2471,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex space-x-2">
                             <input
                               type="text"
-                              placeholder="添加生活品质描述"
+                              placeholder={t('addLifestyleDescription')}
                               className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -2468,7 +2498,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 受教育水平 - 单行文本数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">受教育水平</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('educationLevel')}</label>
                         <div className="space-y-2">
                           {/* 现有标签 */}
                           <div className="flex flex-wrap gap-1">
@@ -2490,7 +2520,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex space-x-2">
                             <input
                               type="text"
-                              placeholder="添加受教育水平"
+                              placeholder={t('addEducationLevel')}
                               className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -2517,7 +2547,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 心理特征 - 单行文本数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">心理特征</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('psychologicalTraits')}</label>
                         <div className="space-y-2">
                           {/* 现有标签 */}
                           <div className="flex flex-wrap gap-1">
@@ -2539,7 +2569,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex space-x-2">
                             <input
                               type="text"
-                              placeholder="添加心理特征描述"
+                              placeholder={t('addPsychologicalTrait')}
                               className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -2566,7 +2596,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 痛点与需求 - 单行文本数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">痛点与需求</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('painPointsAndNeeds')}</label>
                         <div className="space-y-2">
                           {/* 现有标签 */}
                           <div className="flex flex-wrap gap-1">
@@ -2588,7 +2618,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex space-x-2">
                             <input
                               type="text"
-                              placeholder="添加痛点与需求描述"
+                              placeholder={t('addPainPointDescription')}
                               className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -2615,7 +2645,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 典型使用场景 - 单行文本数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">典型使用场景</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('typicalUseCases')}</label>
                         <div className="space-y-2">
                           {/* 现有标签 */}
                           <div className="flex flex-wrap gap-1">
@@ -2637,7 +2667,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex space-x-2">
                             <input
                               type="text"
-                              placeholder="添加典型使用场景"
+                              placeholder={t('addTypicalUseCase')}
                               className="flex-1 text-xs p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -2670,7 +2700,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           onClick={() => handleSaveAndUpdate('targetAudience')}
                           className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700 transition-colors"
                         >
-                          保存并更新内容
+                          {t('saveAndUpdate')}
                         </button>
                       </div>
                     )}
@@ -2689,7 +2719,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       className="flex items-center justify-between cursor-pointer mb-3"
                       onClick={() => toggleBubbleCollapse('visualAssets')}
                     >
-                      <h4 className="text-sm font-bold text-gray-900">4. 视觉资产指南 (Visual Asset Guidelines)</h4>
+                      <h4 className="text-sm font-bold text-gray-900">{t('stepNumber', { number: 4 })} {t('visualAssetGuidelines')} ({t('visualAssetGuidelinesEn')})</h4>
                       <svg 
                         className={`w-4 h-4 text-gray-500 transition-transform ${bubbleCollapsed.visualAssets ? 'rotate-180' : ''}`}
                         fill="none" 
@@ -2704,7 +2734,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm space-y-4">
                       {/* 品牌logo描述 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">品牌logo描述</label>
+                        <label className="text-xs font-medium text-gray-700 mb-1 block">{t('brandLogoDescription')}</label>
                         <textarea
                           value={brandVisualData.logoDescription}
                           onChange={(e) => handleBrandVisualChange('logoDescription', e.target.value)}
@@ -2714,14 +2744,14 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                             e.currentTarget.style.height = 'auto';
                             e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
                           }}
-                          placeholder="请输入品牌logo描述"
+                          placeholder={t('enterBrandLogoDescription')}
                         />
                       </div>
 
                       {/* 品牌logo选择 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">品牌logo选择</label>
-                        <p className="text-xs text-gray-500 mb-3">請從下方生成的品牌Logo中選擇至少1個作為品牌Logo，如選擇多個，第一個logo將作為主Logo</p>
+                        <label className="text-xs font-medium text-gray-700 mb-1 block">{t('brandLogoSelection')}</label>
+                        <p className="text-xs text-gray-500 mb-3">{t('logoSelectionDescription')}</p>
                         
                         {/* 选择框区域 */}
                         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -2795,8 +2825,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       </div>
                       {/* 品牌色彩方案 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">3.品牌色彩方案 (Brand Color Scheme)</label>
-                        <p className="text-xs text-gray-500 mb-3">請從下方生成的品牌色彩系统中選擇至少一個作為色彩體系,第一個選擇將作為主色彩,二三將作為輔助色彩</p>
+                        <label className="text-xs font-medium text-gray-700 mb-1 block">{t('stepNumber', { number: 3 })} {t('brandColorScheme')} ({t('brandColorSchemeEn')})</label>
+                        <p className="text-xs text-gray-500 mb-3">{t('colorSchemeSelectionDescription')}</p>
                         
                         {/* 选择框区域 */}
                         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -2828,7 +2858,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         {/* 可选色彩系统列表 */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <label className="text-xs font-medium text-gray-700">可选择的色彩系统</label>
+                            <label className="text-xs font-medium text-gray-700">{t('availableColorSystems')}</label>
                             <button
                               onClick={handleAddCustomColorSystem}
                               className="text-xs text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1"
@@ -2836,7 +2866,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                               </svg>
-                              添加自定义色彩系统
+                              {t('addCustomColorSystem')}
                             </button>
                           </div>
                           <div className="flex gap-3 overflow-x-auto pb-2">
@@ -2861,7 +2891,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   
                                   {/* 主色值 */}
                                   <div className="mb-2">
-                                    <div className="text-xs text-gray-600 mb-1">主色值</div>
+                                    <div className="text-xs text-gray-600 mb-1">{t('mainColors')}</div>
                                     <div className="flex gap-1">
                                       {colorSystem.mainColors.map((color, index) => (
                                         <div key={index} className="flex flex-col items-center">
@@ -2877,7 +2907,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   
                                   {/* 中性色 */}
                                   <div className="mb-2">
-                                    <div className="text-xs text-gray-600 mb-1">中性色</div>
+                                    <div className="text-xs text-gray-600 mb-1">{t('neutralColors')}</div>
                                     <div className="flex gap-1">
                                       {colorSystem.neutralColors.map((color, index) => (
                                         <div key={index} className="flex flex-col items-center">
@@ -2893,7 +2923,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   
                                   {/* 辅助色 */}
                                   <div>
-                                    <div className="text-xs text-gray-600 mb-1">辅助色</div>
+                                    <div className="text-xs text-gray-600 mb-1">{t('accentColors')}</div>
                                     <div className="flex gap-1">
                                       {colorSystem.accentColors.map((color, index) => (
                                         <div key={index} className="flex flex-col items-center">
@@ -2921,7 +2951,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           onClick={() => handleSaveAndUpdate('visualAssets')}
                           className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700 transition-colors"
                         >
-                          保存并更新内容
+                          {t('saveAndUpdate')}
                         </button>
                       </div>
                     )}
@@ -2929,7 +2959,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                 </div>
               )}
 
-              {/* 5. 内容与产品信息气泡 */}
+              {/* {t('stepNumber', { number: 5 })} 内容与产品信息气泡 */}
               {showContentProducts && (
                 <div className="flex items-start space-x-3">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -2940,7 +2970,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       className="flex items-center justify-between cursor-pointer mb-3"
                       onClick={() => toggleBubbleCollapse('contentProducts')}
                     >
-                      <h4 className="text-sm font-bold text-gray-900">5. 内容与产品信息 (Content & Product Information)</h4>
+                      <h4 className="text-sm font-bold text-gray-900">{t('stepNumber', { number: 5 })} {t('contentAndProductInfo')} ({t('contentAndProductInfoEn')})</h4>
                       <svg 
                         className={`w-4 h-4 text-gray-500 transition-transform ${bubbleCollapsed.contentProducts ? 'rotate-180' : ''}`}
                         fill="none" 
@@ -2955,7 +2985,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm space-y-4">
                       {/* 产品/服务清单 - 多行文本数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">产品/服务清单</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('productServiceList')}</label>
                         <div className="space-y-2">
                           {contentProductData.productList.map((product, index) => (
                             <div key={index} className="flex items-start gap-2">
@@ -2984,7 +3014,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           ))}
                           <div className="flex gap-2">
                             <textarea
-                              placeholder="添加新产品/服务"
+                              placeholder={t('addNewProductService')}
                               className="flex-1 text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                               style={{ minHeight: '60px', height: 'auto' }}
                               data-auto-height="true"
@@ -3016,7 +3046,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 独特卖点 - 单行文本数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">独特卖点</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('uniqueSellingPoints')}</label>
                         <div className="space-y-2">
                           {contentProductData.uniqueSellingPoints.map((point, index) => (
                             <div key={index} className="flex items-center gap-2">
@@ -3029,7 +3059,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   handleContentProductChange('uniqueSellingPoints', newList);
                                 }}
                                 className="flex-1 text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                placeholder={`独特卖点 ${index + 1}`}
+                                placeholder={`${t('uniqueSellingPoint')} ${index + 1}`}
                               />
                               <button
                                 onClick={() => handleRemoveSellingPoint(index)}
@@ -3044,7 +3074,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex gap-2">
                             <input
                               type="text"
-                              placeholder="添加新独特卖点"
+                              placeholder={t('addNewUniqueSellingPoint')}
                               className="flex-1 text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -3071,12 +3101,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 常见问答 - 带标题型多行文本框数组 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">常见问答</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('frequentlyAskedQuestions')}</label>
                         <div className="space-y-3">
                           {contentProductData.faqList.map((faq, index) => (
                             <div key={index} className="border border-gray-200 rounded-lg p-3">
                               <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-gray-500">问答 {index + 1}</span>
+                                <span className="text-xs text-gray-500">{t('qAndA')} {index + 1}</span>
                                 <button
                                   onClick={() => handleRemoveFAQ(index)}
                                   className="w-5 h-5 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors"
@@ -3092,7 +3122,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   value={faq.title}
                                   onChange={(e) => handleUpdateFAQ(index, 'title', e.target.value)}
                                   className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                                  placeholder="问题标题"
+                                  placeholder={t('questionTitle')}
                                 />
                                 <textarea
                                   value={faq.content}
@@ -3101,7 +3131,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   style={{ minHeight: '60px', height: 'auto' }}
                                   data-auto-height="true"
                                   onInput={(e) => adjustTextareaHeight(e.currentTarget)}
-                                  placeholder="问题答案"
+                                  placeholder={t('questionAnswer')}
                                 />
                               </div>
                             </div>
@@ -3113,7 +3143,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
-                            添加新问答
+                            {t('addNewFAQ')}
                           </button>
                         </div>
                       </div>
@@ -3126,7 +3156,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           onClick={() => handleSaveAndUpdate('contentProducts')}
                           className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700 transition-colors"
                         >
-                          保存并更新内容
+                          {t('saveAndUpdate')}
                         </button>
                       </div>
                     )}
@@ -3145,7 +3175,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       className="flex items-center justify-between cursor-pointer mb-3"
                       onClick={() => toggleBubbleCollapse('seoOptimization')}
                     >
-                      <h4 className="text-sm font-bold text-gray-900">6. SEO与优化策略 (SEO & Optimization Strategy)</h4>
+                      <h4 className="text-sm font-bold text-gray-900">{t('stepNumber', { number: 6 })} {t('seoOptimizationStrategy')} ({t('seoOptimizationStrategyEn')})</h4>
                       <svg 
                         className={`w-4 h-4 text-gray-500 transition-transform ${bubbleCollapsed.seoOptimization ? 'rotate-180' : ''}`}
                         fill="none" 
@@ -3160,7 +3190,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm space-y-4">
                       {/* 品牌词 - 标签属性 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">品牌词</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('brandKeywords')}</label>
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2">
                             {seoData.brandKeywords.map((keyword, index) => (
@@ -3180,7 +3210,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex gap-2">
                             <input
                               type="text"
-                              placeholder="添加品牌词"
+                              placeholder={t('addBrandKeyword')}
                               className="flex-1 text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -3207,7 +3237,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 产品词 - 标签属性 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">产品词</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('productKeywords')}</label>
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2">
                             {seoData.productKeywords.map((keyword, index) => (
@@ -3227,7 +3257,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex gap-2">
                             <input
                               type="text"
-                              placeholder="添加产品词"
+                              placeholder={t('addProductKeyword')}
                               className="flex-1 text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -3254,7 +3284,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* 行业词 - 标签属性 */}
                       <div>
-                        <label className="text-xs font-medium text-gray-700 mb-2 block">行业词</label>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">{t('industryKeywords')}</label>
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2">
                             {seoData.industryKeywords.map((keyword, index) => (
@@ -3274,7 +3304,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           <div className="flex gap-2">
                             <input
                               type="text"
-                              placeholder="添加行业词"
+                              placeholder={t('addIndustryKeyword')}
                               className="flex-1 text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
@@ -3307,7 +3337,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           onClick={() => handleSaveAndUpdate('seoOptimization')}
                           className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700 transition-colors"
                         >
-                          保存并更新内容
+                          {t('saveAndUpdate')}
                         </button>
                       </div>
                     )}
@@ -3326,7 +3356,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       className="flex items-center justify-between cursor-pointer mb-3"
                       onClick={() => toggleBubbleCollapse('socialMedia')}
                     >
-                      <h4 className="text-sm font-bold text-gray-900">7. 社交媒体 (Social Media)</h4>
+                      <h4 className="text-sm font-bold text-gray-900">{t('stepNumber', { number: 7 })} {t('socialMedia')} ({t('socialMediaEn')})</h4>
                       <svg 
                         className={`w-4 h-4 text-gray-500 transition-transform ${bubbleCollapsed.socialMedia ? 'rotate-180' : ''}`}
                         fill="none" 
@@ -3341,20 +3371,20 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm space-y-4">
                       {/* Facebook */}
                       <div>
-                        <h5 className="text-xs font-bold text-gray-900 mb-3">Facebook</h5>
+                        <h5 className="text-xs font-bold text-gray-900 mb-3">{t('facebook')}</h5>
                         <div className="space-y-2">
                           <div>
-                            <label className="text-xs text-gray-600 mb-1 block">Facebook名称</label>
+                            <label className="text-xs text-gray-600 mb-1 block">{t('facebookName')}</label>
                             <input
                               type="text"
                               value={socialMediaData.facebook.name}
                               onChange={(e) => handleSocialMediaChange('facebook', 'name', e.target.value)}
                               className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                              placeholder="Facebook页面名称"
+                              placeholder={t('facebookPageName')}
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-600 mb-1 block">主页地址</label>
+                            <label className="text-xs text-gray-600 mb-1 block">{t('pageUrl')}</label>
                             <input
                               type="text"
                               value={socialMediaData.facebook.url}
@@ -3368,20 +3398,20 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* Instagram */}
                       <div>
-                        <h5 className="text-xs font-bold text-gray-900 mb-3">Instagram</h5>
+                        <h5 className="text-xs font-bold text-gray-900 mb-3">{t('instagram')}</h5>
                         <div className="space-y-2">
                           <div>
-                            <label className="text-xs text-gray-600 mb-1 block">Instagram名称</label>
+                            <label className="text-xs text-gray-600 mb-1 block">{t('instagramName')}</label>
                             <input
                               type="text"
                               value={socialMediaData.instagram.name}
                               onChange={(e) => handleSocialMediaChange('instagram', 'name', e.target.value)}
                               className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                              placeholder="@your_instagram_handle"
+                              placeholder={t('instagramHandle')}
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-600 mb-1 block">主页地址</label>
+                            <label className="text-xs text-gray-600 mb-1 block">{t('pageUrl')}</label>
                             <input
                               type="text"
                               value={socialMediaData.instagram.url}
@@ -3395,20 +3425,20 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
                       {/* Rednote (小红书) */}
                       <div>
-                        <h5 className="text-xs font-bold text-gray-900 mb-3">Rednote (小红书)</h5>
+                        <h5 className="text-xs font-bold text-gray-900 mb-3">{t('rednote')} ({t('xiaohongshu')})</h5>
                         <div className="space-y-2">
                           <div>
-                            <label className="text-xs text-gray-600 mb-1 block">Rednote名称</label>
+                            <label className="text-xs text-gray-600 mb-1 block">{t('rednoteName')}</label>
                             <input
                               type="text"
                               value={socialMediaData.rednote.name}
                               onChange={(e) => handleSocialMediaChange('rednote', 'name', e.target.value)}
                               className="w-full text-xs text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                              placeholder="小红书账号名称"
+                              placeholder={t('rednoteAccountName')}
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-600 mb-1 block">主页地址</label>
+                            <label className="text-xs text-gray-600 mb-1 block">{t('pageUrl')}</label>
                             <input
                               type="text"
                               value={socialMediaData.rednote.url}
@@ -3428,7 +3458,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                           onClick={() => handleSaveAndUpdate('socialMedia')}
                           className="px-3 py-1 bg-primary-600 text-white rounded text-xs hover:bg-primary-700 transition-colors"
                         >
-                          保存并更新内容
+                          {t('saveAndUpdate')}
                         </button>
                       </div>
                     )}
@@ -3449,7 +3479,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       </div>
-                      <span className="text-sm text-gray-600">正在打开品牌包结果...</span>
+                      <span className="text-sm text-gray-600">{t('openingBrandPackResult')}</span>
                     </div>
                   </div>
                 </div>
@@ -3466,7 +3496,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       <div className="flex items-center mb-4">
                         <img 
                           src={godivaBrandData.logo} 
-                          alt="GODIVA Logo" 
+                          alt={t('godivaLogo')} 
                           className="w-8 h-8 rounded-lg mr-3"
                         />
                         <h4 className="text-sm font-bold text-gray-900">{godivaBrandData.name}</h4>
@@ -3474,27 +3504,27 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                       
                       <div className="space-y-3">
                         <div>
-                          <span className="text-xs text-gray-600">行业类型:</span>
+                          <span className="text-xs text-gray-600">{t('industryType')}:</span>
                           <p className="text-xs text-gray-900 font-medium mt-1">{godivaBrandData.industry}</p>
                         </div>
                         
                         <div>
-                          <span className="text-xs text-gray-600">目标用户:</span>
+                          <span className="text-xs text-gray-600">{t('targetUsers')}:</span>
                           <p className="text-xs text-gray-900 mt-1">{godivaBrandData.targetUsers}</p>
                         </div>
                         
                         <div>
-                          <span className="text-xs text-gray-600">品牌特色:</span>
+                          <span className="text-xs text-gray-600">{t('brandFeatures')}:</span>
                           <p className="text-xs text-gray-900 mt-1">{godivaBrandData.brandFeatures}</p>
                         </div>
                         
                         <div>
-                          <span className="text-xs text-gray-600">品牌个性:</span>
+                          <span className="text-xs text-gray-600">{t('brandPersonality')}:</span>
                           <p className="text-xs text-gray-900 mt-1">{godivaBrandData.brandPersonality}</p>
                         </div>
                         
                         <div>
-                          <span className="text-xs text-gray-600">品牌价值观:</span>
+                          <span className="text-xs text-gray-600">{t('brandValues')}:</span>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {godivaBrandData.brandValues.map((value, index) => (
                               <span key={index} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
@@ -3505,7 +3535,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                         
                         <div>
-                          <span className="text-xs text-gray-600">目标受众:</span>
+                          <span className="text-xs text-gray-600">{t('targetAudience')}:</span>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {godivaBrandData.targetAudience.map((audience, index) => (
                               <span key={index} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
@@ -3516,7 +3546,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                         
                         <div>
-                          <span className="text-xs text-gray-600">核心信息:</span>
+                          <span className="text-xs text-gray-600">{t('keyMessages')}:</span>
                           <ul className="text-xs text-gray-900 mt-1 space-y-1">
                             {godivaBrandData.keyMessages.map((message, index) => (
                               <li key={index} className="flex items-start">
@@ -3528,7 +3558,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                         
                         <div>
-                          <span className="text-xs text-gray-600">品牌描述:</span>
+                          <span className="text-xs text-gray-600">{t('brandDescription')}:</span>
                           <p className="text-xs text-gray-900 mt-1 leading-relaxed">
                             {godivaBrandData.description}
                           </p>
@@ -3547,24 +3577,24 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 shadow-sm max-w-sm">
                     <p className="text-sm text-gray-800 mb-3">
-                      如果对结果有疑问，请发送给我，我会实时修改。
+                      {t('ifYouHaveQuestionsAboutResults')}
                     </p>
                     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                      <h4 className="text-sm font-medium text-gray-900 mb-3">修改选项</h4>
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">{t('modificationOptions')}</h4>
                       <div className="space-y-2">
-                        <button className="w-full text-left px-3 py-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                          ✏️ 修改品牌名称
-                        </button>
-                        <button className="w-full text-left px-3 py-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                          🎨 调整品牌风格
-                        </button>
-                        <button className="w-full text-left px-3 py-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                          👥 修改目标用户
-                        </button>
-                        <button className="w-full text-left px-3 py-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                          📝 更新品牌描述
-                        </button>
-                      </div>
+                          <button className="w-full text-left px-3 py-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                            ✏️ {t('modifyBrandName')}
+                          </button>
+                          <button className="w-full text-left px-3 py-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                            🎨 {t('adjustBrandStyle')}
+                          </button>
+                          <button className="w-full text-left px-3 py-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                            👥 {t('modifyTargetUsers')}
+                          </button>
+                          <button className="w-full text-left px-3 py-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                            📝 {t('updateBrandDescription')}
+                          </button>
+                        </div>
                     </div>
                   </div>
                 </div>
@@ -3583,7 +3613,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                       </div>
-                      <span className="text-sm text-gray-500">AI正在思考中...</span>
+                      <span className="text-sm text-gray-500">{t('aIThinking')}</span>
                     </div>
                   </div>
                 </div>
@@ -3595,11 +3625,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               <div className="flex space-x-2">
                 <input
                   type="text"
-                  placeholder="输入您的回复..."
+                  placeholder={t('pleaseEnterYourReply')}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                 />
                 <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm">
-                  发送
+                  {t('send')}
                 </button>
               </div>
             </div>
@@ -3608,16 +3638,16 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
         {/* 右侧预览区域 - 扩大尺寸 */}
         <div className="flex-1 p-6 bg-gray-50 flex flex-col">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">品牌包预览</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('brandPackPreview')}</h3>
           
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 flex-1 overflow-y-auto">
             {/* 品牌包基础信息 */}
             <div className="mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">品牌包基础信息</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">{t('brandPackBasicInfo')}</h3>
               
               <div className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">品牌包名称:</label>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('brandPackName')}:</label>
                   {formData.name ? (
                     <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border">
                       {formData.name}
@@ -3628,7 +3658,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">品牌包描述:</label>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">{t('brandPackDescription')}:</label>
                   {formData.description ? (
                     <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border min-h-[60px]">
                       {formData.description}
@@ -3642,15 +3672,15 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
             {/* 品牌包详细信息 */}
             <div className="space-y-6">
-              <h3 className="text-lg font-bold text-gray-900">品牌包详细信息</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('brandPackDetailedInfo')}</h3>
               
               {/* 第一部分：品牌核心身份 */}
               <div className="border-l-4 border-blue-500 pl-4">
-                <h4 className="text-base font-bold text-gray-900 mb-4">第一部分：品牌核心身份</h4>
+                <h4 className="text-base font-bold text-gray-900 mb-4">{t('partOneBrandCoreIdentity')}</h4>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">品牌名称（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('brandNameRequired')}</label>
                     {previewLoadingStates.brandCoreIdentity ? (
                       <div className="flex flex-wrap gap-1">
                         {brandCoreIdentityData.brandName.map((name, index) => (
@@ -3672,7 +3702,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">品牌标语（Slogan）（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('brandSloganRequired')}</label>
                     {previewLoadingStates.brandCoreIdentity ? (
                       <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border min-h-[60px]">
                         {brandCoreIdentityData.brandSlogan}
@@ -3683,10 +3713,10 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">品牌故事与使命（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('brandStoryMissionRequired')}</label>
                     <div className="space-y-2">
                       <div>
-                        <span className="text-xs text-gray-500">故事：</span>
+                        <span className="text-xs text-gray-500">{t('story')}：</span>
                         {previewLoadingStates.brandCoreIdentity ? (
                           <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border min-h-[60px] mt-1">
                             {brandCoreIdentityData.brandStory}
@@ -3696,7 +3726,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         )}
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">使命：</span>
+                        <span className="text-xs text-gray-500">{t('mission')}：</span>
                         {previewLoadingStates.brandCoreIdentity ? (
                           <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border min-h-[60px] mt-1">
                             {brandCoreIdentityData.brandMission}
@@ -3709,7 +3739,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">品牌核心价值与关键词（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('brandCoreValuesKeywordsRequired')}</label>
                     <div className="space-y-2">
                       {previewLoadingStates.brandCoreIdentity ? (
                         <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border min-h-[60px]">
@@ -3743,11 +3773,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
               {/* 第二部分：品牌声音与语调 */}
               <div className="border-l-4 border-green-500 pl-4">
-                <h4 className="text-base font-bold text-gray-900 mb-4">第二部分：品牌声音与语调</h4>
+                <h4 className="text-base font-bold text-gray-900 mb-4">{t('partTwoBrandVoiceTone')}</h4>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">品牌个性描述（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('brandPersonalityRequired')}</label>
                     {previewLoadingStates.brandVoiceTone ? (
                       <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border min-h-[60px]">
                         {brandVoiceToneData.personality}
@@ -3758,7 +3788,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">语调指南（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('toneGuideRequired')}</label>
                     {previewLoadingStates.brandVoiceTone ? (
                       <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border min-h-[60px]">
                         {brandVoiceToneData.toneGuide}
@@ -3769,10 +3799,10 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">风格与词汇偏好（选填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('styleVocabularyPreferences')}</label>
                     <div className="space-y-2">
                       <div>
-                        <span className="text-xs text-gray-500">偏爱使用的词汇：</span>
+                        <span className="text-xs text-gray-500">{t('preferredWords')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.brandVoiceTone ? (
                             brandVoiceToneData.preferredWords.map((word, index) => (
@@ -3793,7 +3823,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">避免使用的词汇：</span>
+                        <span className="text-xs text-gray-500">{t('avoidedWords')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.brandVoiceTone ? (
                             brandVoiceToneData.avoidedWords.map((word, index) => (
@@ -3820,14 +3850,14 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
               {/* 第三部分：目标受众 */}
               <div className="border-l-4 border-purple-500 pl-4">
-                <h4 className="text-base font-bold text-gray-900 mb-4">第三部分：目标受众</h4>
+                <h4 className="text-base font-bold text-gray-900 mb-4">{t('partThreeTargetAudience')}</h4>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">目标用户画像（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('targetUserProfileRequired')}</label>
                     <div className="space-y-3">
                       <div>
-                        <span className="text-xs text-gray-500">人口统计：</span>
+                        <span className="text-xs text-gray-500">{t('demographics')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.targetAudience ? (
                             targetAudienceData.demographics.map((item, index) => (
@@ -3848,7 +3878,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">性别：</span>
+                        <span className="text-xs text-gray-500">{t('gender')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.targetAudience ? (
                             targetAudienceData.gender.map((item, index) => (
@@ -3865,7 +3895,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">收入：</span>
+                        <span className="text-xs text-gray-500">{t('income')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.targetAudience ? (
                             targetAudienceData.income.map((item, index) => (
@@ -3882,7 +3912,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">生活品质：</span>
+                        <span className="text-xs text-gray-500">{t('lifestyle')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.targetAudience ? (
                             targetAudienceData.lifestyle.map((item, index) => (
@@ -3899,7 +3929,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">受教育水平：</span>
+                        <span className="text-xs text-gray-500">{t('education')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.targetAudience ? (
                             targetAudienceData.education.map((item, index) => (
@@ -3916,7 +3946,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">心理特征：</span>
+                        <span className="text-xs text-gray-500">{t('psychological')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.targetAudience ? (
                             targetAudienceData.psychological.map((item, index) => (
@@ -3933,7 +3963,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">痛点与需求：</span>
+                        <span className="text-xs text-gray-500">{t('painPoints')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.targetAudience ? (
                             targetAudienceData.painPoints.map((item, index) => (
@@ -3950,7 +3980,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">典型使用场景：</span>
+                        <span className="text-xs text-gray-500">{t('useCases')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.targetAudience ? (
                             targetAudienceData.useCases.map((item, index) => (
@@ -3973,11 +4003,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
               {/* 第四部分：视觉资产 */}
               <div className="border-l-4 border-orange-500 pl-4">
-                <h4 className="text-base font-bold text-gray-900 mb-4">第四部分：视觉资产（上传区）</h4>
+                <h4 className="text-base font-bold text-gray-900 mb-4">{t('partFourVisualAssets')}</h4>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">品牌Logo（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('brandLogoRequired')}</label>
                     {previewLoadingStates.visualAssets ? (
                       <div className="space-y-3">
                         <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border min-h-[60px]">
@@ -3985,7 +4015,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                         {brandVisualData.selectedLogos.length > 0 && (
                           <div>
-                            <div className="text-xs text-gray-500 mb-2">已选择的Logo：</div>
+                            <div className="text-xs text-gray-500 mb-2">{t('selectedLogos')}：</div>
                             <div className="flex flex-wrap gap-2">
                               {brandVisualData.selectedLogos.map((logo, index) => (
                                 <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
@@ -4007,18 +4037,18 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">品牌色彩系统（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('brandColorSystemRequired')}</label>
                     <div className="space-y-3">
                       {previewLoadingStates.visualAssets ? (
                         <div className="space-y-3">
-                          <div className="text-xs text-gray-500">已选择的色彩系统：</div>
+                          <div className="text-xs text-gray-500">{t('selectedColorSystems')}：</div>
                           <div className="space-y-3">
                             {brandVisualData.selectedColorSystems.map((system, index) => (
                               <div key={index} className="p-3 bg-gray-50 rounded border">
                                 <div className="text-sm font-medium text-gray-900 mb-2">{system.name}</div>
                                 <div className="space-y-2">
                                   <div>
-                                    <div className="text-xs text-gray-600 mb-1">主色：</div>
+                                    <div className="text-xs text-gray-600 mb-1">{t('mainColors')}：</div>
                                     <div className="flex gap-2">
                                       {system.mainColors.map((color, colorIndex) => (
                                         <div key={colorIndex} className="flex items-center gap-1">
@@ -4032,7 +4062,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="text-xs text-gray-600 mb-1">中性色：</div>
+                                    <div className="text-xs text-gray-600 mb-1">{t('neutralColors')}：</div>
                                     <div className="flex gap-2">
                                       {system.neutralColors.map((color, colorIndex) => (
                                         <div key={colorIndex} className="flex items-center gap-1">
@@ -4046,7 +4076,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="text-xs text-gray-600 mb-1">辅助色：</div>
+                                    <div className="text-xs text-gray-600 mb-1">{t('accentColors')}：</div>
                                     <div className="flex gap-2">
                                       {system.accentColors.map((color, colorIndex) => (
                                         <div key={colorIndex} className="flex items-center gap-1">
@@ -4082,11 +4112,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
               {/* 第五部分：内容与产品信息 */}
               <div className="border-l-4 border-red-500 pl-4">
-                <h4 className="text-base font-bold text-gray-900 mb-4">第五部分：内容与产品信息</h4>
+                <h4 className="text-base font-bold text-gray-900 mb-4">{t('partFiveContentProducts')}</h4>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">产品/服务清单（必填）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('productServiceListRequired')}</label>
                     {previewLoadingStates.contentProducts ? (
                       <div className="space-y-2">
                         {contentProductData.productList.map((product, index) => (
@@ -4101,7 +4131,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">独特卖点（USP）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('uniqueSellingPoints')}</label>
                     {previewLoadingStates.contentProducts ? (
                       <div className="space-y-2">
                         {contentProductData.uniqueSellingPoints.map((point, index) => (
@@ -4116,7 +4146,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">常见问答（FAQ）（选填，但强烈建议）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('faqRecommended')}</label>
                     {previewLoadingStates.contentProducts ? (
                       <div className="space-y-3">
                         {contentProductData.faqList.map((faq, index) => (
@@ -4135,14 +4165,14 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
               {/* 第六部分：SEO与优化 */}
               <div className="border-l-4 border-indigo-500 pl-4">
-                <h4 className="text-base font-bold text-gray-900 mb-4">第六部分：SEO与优化</h4>
+                <h4 className="text-base font-bold text-gray-900 mb-4">{t('partSixSeoOptimization')}</h4>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">核心关键词（选填，但强烈建议）</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('coreKeywordsRecommended')}</label>
                     <div className="space-y-3">
                       <div>
-                        <span className="text-xs text-gray-500">品牌词：</span>
+                        <span className="text-xs text-gray-500">{t('brandKeywords')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.seoOptimization ? (
                             seoData.brandKeywords.map((keyword, index) => (
@@ -4163,7 +4193,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">产品词：</span>
+                        <span className="text-xs text-gray-500">{t('productKeywords')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.seoOptimization ? (
                             seoData.productKeywords.map((keyword, index) => (
@@ -4184,7 +4214,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         </div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">行业词：</span>
+                        <span className="text-xs text-gray-500">{t('industryKeywords')}：</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {previewLoadingStates.seoOptimization ? (
                             seoData.industryKeywords.map((keyword, index) => (
@@ -4211,40 +4241,40 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
               {/* 第七部分：社交媒体 */}
               <div className="border-l-4 border-pink-500 pl-4">
-                <h4 className="text-base font-bold text-gray-900 mb-4">第七部分：社交媒体</h4>
+                <h4 className="text-base font-bold text-gray-900 mb-4">{t('partSevenSocialMedia')}</h4>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">社交媒体平台</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">{t('socialMediaPlatforms')}</label>
                     <div className="space-y-3">
                       <div>
-                        <span className="text-xs text-gray-500">Facebook：</span>
+                        <span className="text-xs text-gray-500">{t('facebook')}：</span>
                         {previewLoadingStates.socialMedia ? (
                           <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border mt-1">
-                            <div>名称：{socialMediaData.facebook.name}</div>
-                            <div>地址：{socialMediaData.facebook.url}</div>
+                            <div>{t('name')}：{socialMediaData.facebook.name}</div>
+                            <div>{t('url')}：{socialMediaData.facebook.url}</div>
                           </div>
                         ) : (
                           <div className="h-12 bg-gray-200 rounded border animate-pulse mt-1"></div>
                         )}
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">Instagram：</span>
+                        <span className="text-xs text-gray-500">{t('instagram')}：</span>
                         {previewLoadingStates.socialMedia ? (
                           <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border mt-1">
-                            <div>名称：{socialMediaData.instagram.name}</div>
-                            <div>地址：{socialMediaData.instagram.url}</div>
+                            <div>{t('name')}：{socialMediaData.instagram.name}</div>
+                            <div>{t('url')}：{socialMediaData.instagram.url}</div>
                           </div>
                         ) : (
                           <div className="h-12 bg-gray-200 rounded border animate-pulse mt-1"></div>
                         )}
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">Rednote (小红书)：</span>
+                        <span className="text-xs text-gray-500">{t('rednoteXiaohongshu')}：</span>
                         {previewLoadingStates.socialMedia ? (
                           <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border mt-1">
-                            <div>名称：{socialMediaData.rednote.name}</div>
-                            <div>地址：{socialMediaData.rednote.url}</div>
+                            <div>{t('name')}：{socialMediaData.rednote.name}</div>
+                            <div>{t('url')}：{socialMediaData.rednote.url}</div>
                           </div>
                         ) : (
                           <div className="h-12 bg-gray-200 rounded border animate-pulse mt-1"></div>
@@ -4263,17 +4293,25 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              取消
+              {t('cancel')}
             </button>
             <button
               onClick={() => {
-                // 这里可以添加保存逻辑
-                alert('品牌包已保存！');
+                // 收集表单数据并保存
+                const brandPackData: CreateBrandPackData = {
+                  name: formData.name || t('unnamedBrandPack'),
+                  description: formData.description || '',
+                  logo: formData.logo || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&backgroundColor=6b7280&size=80',
+                  tags: formData.tags || []
+                };
+                
+                // 调用onCreate回调保存数据
+                onCreate(brandPackData);
                 onClose();
               }}
               className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              保存品牌包
+                    {t('saveBrandPack')}
             </button>
           </div>
         </div>
@@ -4294,22 +4332,22 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl text-white">🤖</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">AI智能生成</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('aiSmartGeneration')}</h3>
               <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                通过AI技术自动生成品牌包，只需输入品牌名称和描述，AI将为您创建完整的品牌视觉系统
+                {t('aiGenerationDesc')}
               </p>
               <div className="space-y-2 text-xs text-gray-500">
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
-                  自动生成Logo设计
+                  {t('autoGenerateLogo')}
                 </div>
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
-                  智能配色方案
+                  {t('smartColorScheme')}
                 </div>
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
-                  快速生成内容
+                  {t('quickContentGeneration')}
                 </div>
               </div>
             </div>
@@ -4329,28 +4367,28 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl text-white">✏️</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">传统构建</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('traditionalConstruction')}</h3>
               <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                通过传统表单方式手动构建品牌包，您可以完全自定义每个细节，获得更精确的控制
+                {t('traditionalConstructionDesc')}
               </p>
               <div className="space-y-2 text-xs text-gray-500">
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                  手动上传Logo
+                  {t('manuallyUploadLogo')}
                 </div>
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                  自定义配色
+                  {t('customColorScheme')}
                 </div>
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                  精确控制
+                  {t('preciseControl')}
                 </div>
               </div>
             </div>
             <div className="absolute top-4 right-4">
               <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">手</span>
+                <span className="text-white text-xs">{t('hand')}</span>
               </div>
             </div>
           </div>
@@ -4363,9 +4401,9 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               <span className="text-primary-600 text-xs">💡</span>
             </div>
             <div>
-              <p className="text-sm text-gray-700 font-medium mb-1">选择建议</p>
+              <p className="text-sm text-gray-700 font-medium mb-1">{t('selectionRecommendation')}</p>
               <p className="text-xs text-gray-600">
-                如果您是新手或希望快速创建，推荐使用AI生成；如果您有明确的设计需求或希望完全控制每个细节，建议选择传统构建。
+                {t('recommendationText')}
               </p>
             </div>
           </div>
@@ -4381,20 +4419,20 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
           <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">AI正在生成中...</h3>
-          <p className="text-gray-600 mb-4">请稍候，AI正在为您创建专业的品牌包</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">{t('aiGenerating')}</h3>
+          <p className="text-gray-600 mb-4">{t('aiGeneratingPleaseWait')}</p>
           <div className="space-y-2 text-sm text-gray-500">
             <div className="flex items-center justify-center">
               <div className="w-2 h-2 bg-purple-400 rounded-full mr-2 animate-pulse"></div>
-              分析品牌需求
+              {t('analyzingBrandNeeds')}
             </div>
             <div className="flex items-center justify-center">
               <div className="w-2 h-2 bg-purple-400 rounded-full mr-2 animate-pulse"></div>
-              生成视觉元素
+              {t('generatingVisualElements')}
             </div>
             <div className="flex items-center justify-center">
               <div className="w-2 h-2 bg-purple-400 rounded-full mr-2 animate-pulse"></div>
-              优化设计方案
+              {t('optimizingDesignSolution')}
             </div>
           </div>
         </div>
@@ -4408,8 +4446,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
             <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl text-white">✓</span>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">AI生成完成！</h3>
-            <p className="text-gray-600">AI已为您生成了品牌包，请查看结果</p>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">{t('aiGenerationComplete')}</h3>
+            <p className="text-gray-600">{t('aiGenerationCompleteText')}</p>
           </div>
 
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
@@ -4434,14 +4472,14 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               onClick={handleRegenerate}
               className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-medium"
             >
-              重新生成
+              {t('regenerate')}
             </button>
             <button
               type="button"
               onClick={handleConfirmGeneration}
               className="flex-1 px-4 py-3 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors font-medium"
             >
-              确认创建
+              {t('confirmCreation')}
             </button>
           </div>
         </div>
@@ -4454,7 +4492,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              品牌包名称 *
+              {t('brandPackName')} *
             </label>
             <input
               type="text"
@@ -4463,24 +4501,24 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="请输入品牌包名称"
+              placeholder={t('pleaseEnterBrandPackName')}
             />
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              品牌描述（可选）
+              {t('brandDescriptionOptional')}
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
               rows={3}
-              placeholder="描述您的品牌特点、行业、目标用户等，帮助AI生成更精准的品牌包"
+              placeholder={t('brandDescriptionPlaceholder')}
             />
             <p className="mt-1 text-xs text-gray-500">
-              提供更多描述信息，AI将生成更符合您需求的品牌包
+              {t('brandDescriptionHelp')}
             </p>
           </div>
         </div>
@@ -4491,14 +4529,14 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
             onClick={onClose}
             className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-medium"
           >
-            取消
+                    {t('cancel')}
           </button>
           <button
             type="submit"
             disabled={isGenerating}
             className="flex-1 px-4 py-3 bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors font-medium"
           >
-            {isGenerating ? '生成中...' : '下一步'}
+            {isGenerating ? t('generating') : t('nextStep')}
           </button>
         </div>
       </form>
@@ -4511,7 +4549,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              品牌包名称 *
+              {t('brandPackName')} *
             </label>
             <input
               type="text"
@@ -4520,37 +4558,37 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="请输入品牌包名称"
+              placeholder={t('pleaseEnterBrandPackName')}
             />
             {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              品牌包描述
+              {t('brandPackDescription')}
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
               rows={3}
-              placeholder="请输入品牌包描述（可选）"
+              placeholder={t('brandPackDescriptionPlaceholder')}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Logo URL
+              {t('logoUrl')}
             </label>
             <input
               type="url"
               value={formData.logo}
               onChange={(e) => handleInputChange('logo', e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              placeholder="请输入Logo图片URL（可选）"
+              placeholder={t('logoUrlPlaceholder')}
             />
             <p className="mt-1 text-xs text-gray-500">
-              如果不提供，将使用默认Logo
+              {t('defaultLogoIfNotProvided')}
             </p>
           </div>
         </div>
@@ -4561,13 +4599,13 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
             onClick={onClose}
             className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-medium"
           >
-            取消
+                    {t('cancel')}
           </button>
           <button
             type="submit"
             className="flex-1 px-4 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-medium"
           >
-            创建品牌包
+            {t('createBrandPack')}
           </button>
         </div>
       </form>
@@ -4589,11 +4627,11 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
         <div className="px-6 py-4 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <h2 className="text-lg font-semibold text-gray-900">创建品牌包</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('createBrandPack')}</h2>
               <button
                 onClick={() => window.location.reload()}
                 className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-                title="刷新页面"
+                title={t('refreshPage')}
               >
                 <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -4621,7 +4659,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                 <span className="text-gray-600 text-sm">←</span>
               </button>
               <h2 className="text-lg font-semibold text-gray-900">
-                {creationMethod === 'ai' ? 'AI智能生成' : '传统构建'}
+                {creationMethod === 'ai' ? t('aiSmartGeneration') : t('traditionalConstruction')}
               </h2>
             </div>
             <div className="flex items-center space-x-2">
@@ -4629,7 +4667,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               <button
                 onClick={() => window.location.reload()}
                 className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-                title="刷新页面"
+                title={t('refreshPage')}
               >
                 <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -4644,12 +4682,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   }
                 }}
                 className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                title="在新标签页中打开"
+                title={t('openInNewTab')}
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-                <span>新标签页</span>
+                <span>{t('newTab')}</span>
               </button>
               {/* 关闭按钮 */}
               <button
@@ -4673,12 +4711,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               >
                 <span className="text-gray-600 text-sm">←</span>
               </button>
-              <h2 className="text-lg font-semibold text-gray-900">AI正在生成品牌包</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('aiGeneratingBrandPack')}</h2>
             </div>
             <button
               onClick={() => window.location.reload()}
               className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-              title="刷新页面"
+              title={t('refreshPage')}
             >
               <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -4698,12 +4736,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
               >
                 <span className="text-gray-600 text-sm">←</span>
               </button>
-              <h2 className="text-lg font-semibold text-gray-900">传统构建品牌包</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('traditionalBuildBrandPack')}</h2>
             </div>
             <button
               onClick={() => window.location.reload()}
               className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-              title="刷新页面"
+              title={t('refreshPage')}
             >
               <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -4772,7 +4810,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900">添加自定义色彩系统</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('addCustomColorSystem')}</h3>
               <button
                 onClick={() => setShowCustomColorModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -4786,19 +4824,19 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
             <div className="space-y-4">
               {/* 色彩系统名称 */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">色彩系统名称</label>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">{t('colorSystemName')}</label>
                 <input
                   type="text"
                   value={customColorData.name}
                   onChange={(e) => setCustomColorData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full text-sm text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="请输入色彩系统名称"
+                  placeholder={t('pleaseEnterColorSystemName')}
                 />
               </div>
 
               {/* 主色值 */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">主色值</label>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">{t('mainColors')}</label>
                 <div className="space-y-2">
                   {customColorData.mainColors.map((color, index) => (
                     <div key={index} className="flex items-center gap-2">
@@ -4813,7 +4851,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         value={color}
                         onChange={(e) => handleCustomColorChange('mainColors', index, e.target.value)}
                         className="flex-1 text-sm text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder={`主色值 ${index + 1}`}
+                        placeholder={`${t('mainColor')} ${index + 1}`}
                       />
                     </div>
                   ))}
@@ -4822,7 +4860,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
               {/* 中性色 */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">中性色</label>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">{t('neutralColors')}</label>
                 <div className="space-y-2">
                   {customColorData.neutralColors.map((color, index) => (
                     <div key={index} className="flex items-center gap-2">
@@ -4837,7 +4875,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         value={color}
                         onChange={(e) => handleCustomColorChange('neutralColors', index, e.target.value)}
                         className="flex-1 text-sm text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder={`中性色 ${index + 1}`}
+                        placeholder={`${t('neutralColor')} ${index + 1}`}
                       />
                     </div>
                   ))}
@@ -4846,7 +4884,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
 
               {/* 辅助色 */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">辅助色</label>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">{t('accentColors')}</label>
                 <div className="space-y-2">
                   {customColorData.accentColors.map((color, index) => (
                     <div key={index} className="flex items-center gap-2">
@@ -4861,7 +4899,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         value={color}
                         onChange={(e) => handleCustomColorChange('accentColors', index, e.target.value)}
                         className="flex-1 text-sm text-gray-900 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder={`辅助色 ${index + 1}`}
+                        placeholder={`${t('accentColor')} ${index + 1}`}
                       />
                     </div>
                   ))}
@@ -4874,18 +4912,26 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                 onClick={() => setShowCustomColorModal(false)}
                 className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
               >
-                取消
+                {t('cancel')}
               </button>
               <button
                 onClick={handleSaveCustomColorSystem}
                 className="px-4 py-2 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
               >
-                保存
+                {t('save')}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* 服务协议弹窗 */}
+      <ServiceAgreementModal
+        isOpen={showAgreement}
+        onClose={handleAgreementClose}
+        onAgree={handleAgreementAgree}
+        title={t('brandPackCreationServiceAgreement')}
+      />
     </div>
   );
 };

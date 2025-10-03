@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrandPack } from '../types/brandPack';
 
 interface BrandPackCardProps {
@@ -16,8 +17,14 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
   onDelete,
   onViewDetail
 }) => {
+  const { t, i18n } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // 监听语言变化，确保组件在语言切换时更新
+  useEffect(() => {
+    // 当语言变化时，组件会自动重新渲染
+  }, [i18n.language]);
 
   const handleToggle = () => {
     onToggleStatus(brandPack.id);
@@ -60,6 +67,7 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
     <div 
       className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group cursor-pointer"
       onClick={handleCardClick}
+      key={`${brandPack.id}-${i18n.language}`} // 添加语言依赖的key，确保语言切换时组件重新渲染
     >
       {/* 品牌包Logo和状态 */}
       <div className="relative p-6 bg-gradient-to-br from-gray-50 to-gray-100">
@@ -83,7 +91,7 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
                   className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left flex items-center"
                 >
                   <span className="mr-2">✏️</span>
-                  编辑
+                  {t('edit')}
                 </button>
               )}
               {onDelete && (
@@ -92,7 +100,7 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
                   className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left flex items-center"
                 >
                   <span className="mr-2">🗑️</span>
-                  删除
+                  {t('delete')}
                 </button>
               )}
             </div>
@@ -118,7 +126,7 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-gray-100 text-gray-600'
               }`}>
-                {brandPack.isEnabled ? '已启用' : '已禁用'}
+                {brandPack.isEnabled ? t('enabled') : t('disabled')}
               </span>
               <button
                 onClick={(e) => {
@@ -173,18 +181,18 @@ const BrandPackCard: React.FC<BrandPackCardProps> = ({
             <div>
               <p className="text-sm font-medium text-gray-900">{brandPack.creator}</p>
               <p className="text-xs text-gray-500">
-                {brandPack.sharedBy ? `分享自 ${brandPack.sharedBy}` : '创建者'}
+                {brandPack.sharedBy ? `${t('sharedBy')} ${brandPack.sharedBy}` : t('creator')}
               </p>
             </div>
           </div>
           <div className="flex items-center text-primary-600 text-sm font-medium group-hover:text-primary-700 transition-colors">
-            查看详情
+            {t('viewDetails')}
             <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500">创建时间</p>
+            <p className="text-xs text-gray-500">{t('createdAt')}</p>
             <p className="text-sm font-medium text-gray-900">{brandPack.createdAt}</p>
           </div>
         </div>

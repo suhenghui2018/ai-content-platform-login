@@ -1,0 +1,31 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 蓝色渐变背景 -->
+  <defs>
+    <linearGradient id="mGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- M形状背景 -->
+  <path d="M16 6H28C30.2091 6 32 7.79086 32 10V28C32 30.2091 33.7909 32 36 32H48V10C48 7.79086 49.7909 6 52 6H64V32H52V46C52 48.2091 50.2091 50 48 50H36C33.7909 50 32 51.7909 32 54V64H20V54C20 51.7909 18.2091 50 16 50H4V32H16V6Z" fill="url(#mGradient)" />
+  
+  <!-- 网络节点图案 -->
+  <circle cx="32" cy="24" r="4" fill="white" />
+  <circle cx="24" cy="36" r="4" fill="white" />
+  <circle cx="40" cy="36" r="4" fill="white" />
+  <circle cx="28" cy="48" r="4" fill="white" />
+  <circle cx="36" cy="48" r="4" fill="white" />
+  <circle cx="44" cy="24" r="4" fill="white" />
+  <circle cx="20" cy="24" r="4" fill="white" />
+  
+  <!-- 连接线 -->
+  <line x1="32" y1="28" x2="32" y2="32" stroke="white" stroke-width="2" stroke-linecap="round" />
+  <line x1="28" y1="36" x2="32" y2="32" stroke="white" stroke-width="2" stroke-linecap="round" />
+  <line x1="36" y1="36" x2="32" y2="32" stroke="white" stroke-width="2" stroke-linecap="round" />
+  <line x1="24" y1="40" x2="28" y2="44" stroke="white" stroke-width="2" stroke-linecap="round" />
+  <line x1="40" y1="40" x2="36" y2="44" stroke="white" stroke-width="2" stroke-linecap="round" />
+  <line x1="28" y1="48" x2="36" y2="48" stroke="white" stroke-width="2" stroke-linecap="round" />
+  <line x1="44" y1="28" x2="36" y2="32" stroke="white" stroke-width="2" stroke-linecap="round" />
+  <line x1="20" y1="28" x2="24" y2="32" stroke="white" stroke-width="2" stroke-linecap="round" />
+</svg>

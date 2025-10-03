@@ -1,8 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import CreateBrandPackModal from './CreateBrandPackModal';
 
 const BrandPackCreatePage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleClose = () => {
@@ -12,7 +14,7 @@ const BrandPackCreatePage: React.FC = () => {
   const handleCreate = (data: any) => {
     console.log('品牌包创建数据:', data);
     // 这里可以添加保存品牌包的逻辑
-    alert('品牌包创建成功！');
+    alert(t('brandPackCreated'));
     navigate('/dashboard');
   };
 

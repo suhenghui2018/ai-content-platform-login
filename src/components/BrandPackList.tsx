@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrandPack } from '../types/brandPack';
 
 interface BrandPackListProps {
@@ -16,8 +17,17 @@ const BrandPackList: React.FC<BrandPackListProps> = ({
   onDelete,
   onViewDetail
 }) => {
+  const { t, i18n } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // 监听语言变化，确保组件在语言切换时更新
+  useEffect(() => {
+    // 当语言变化时，组件会自动重新渲染
+    // 对于静态文本，t()函数会根据新的语言环境返回正确的翻译
+    // 对于动态内容（如brandPack.name、description等），我们保留原值
+    // 在实际应用中，如果数据支持多语言，可以在这里添加逻辑来获取对应语言的内容
+  }, [i18n.language]);
 
   const handleToggle = () => {
     onToggleStatus(brandPack.id);
@@ -60,6 +70,7 @@ const BrandPackList: React.FC<BrandPackListProps> = ({
     <div 
       className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 p-4 group relative cursor-pointer"
       onClick={handleItemClick}
+      key={`${brandPack.id}-${i18n.language}`} // 添加语言依赖的key，确保语言切换时组件重新渲染
     >
       {/* 右上角操作菜单 */}
       <div className="absolute top-3 right-3" ref={menuRef}>
@@ -80,8 +91,8 @@ const BrandPackList: React.FC<BrandPackListProps> = ({
                 onClick={handleEdit}
                 className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left flex items-center"
               >
-                <span className="mr-2">✏️</span>
-                编辑
+                <span className='mr-2'>✏️</span>
+                {t('edit')}
               </button>
             )}
             {onDelete && (
@@ -89,8 +100,8 @@ const BrandPackList: React.FC<BrandPackListProps> = ({
                 onClick={handleDelete}
                 className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left flex items-center"
               >
-                <span className="mr-2">🗑️</span>
-                删除
+                <span className='mr-2'>🗑️</span>
+                {t('delete')}
               </button>
             )}
           </div>
@@ -117,7 +128,7 @@ const BrandPackList: React.FC<BrandPackListProps> = ({
                 ? 'bg-green-100 text-green-800' 
                 : 'bg-gray-100 text-gray-600'
             }`}>
-              {brandPack.isEnabled ? '已启用' : '已禁用'}
+              {brandPack.isEnabled ? t('enabled') : t('disabled')}
             </span>
             <button
               onClick={handleToggle}
@@ -135,15 +146,16 @@ const BrandPackList: React.FC<BrandPackListProps> = ({
         {/* 品牌包信息 */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-3 mb-1">
+            {/* 动态内容 - 根据语言环境显示 */}
             <h3 className="text-lg font-semibold text-gray-900 truncate">{brandPack.name}</h3>
           </div>
           {brandPack.description && (
             <p className="text-gray-600 text-sm mb-2 line-clamp-1">{brandPack.description}</p>
           )}
           <div className="flex items-center space-x-4 text-sm text-gray-500">
-            <span>创建者: {brandPack.creator}</span>
-            <span>创建时间: {brandPack.createdAt}</span>
-            {brandPack.sharedBy && <span>分享自: {brandPack.sharedBy}</span>}
+            <span>{t('creator')}: {brandPack.creator}</span>
+            <span>{t('createdAt')}: {brandPack.createdAt}</span>
+            {brandPack.sharedBy && <span>{t('sharedBy')}: {brandPack.sharedBy}</span>}
           </div>
         </div>
 

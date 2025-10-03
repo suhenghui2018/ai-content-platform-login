@@ -5,9 +5,10 @@ import { userService } from '../services/userService';
 interface LoginFormProps {
   onModeChange: (mode: 'login' | 'register') => void;
   onLoginSuccess?: () => void;
+  login?: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onModeChange, onLoginSuccess }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onModeChange, onLoginSuccess, login: authLogin }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     email: '',
@@ -55,9 +56,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onModeChange, onLoginSuccess }) =
     console.log('表单验证通过');
     setIsLoading(true);
     
-    // 使用用户服务验证登录
+    // 使用认证上下文或用户服务验证登录
     try {
-      const result = userService.validateLogin(formData.email, formData.password);
+      const result = authLogin 
+        ? await authLogin(formData.email, formData.password)
+        : userService.validateLogin(formData.email, formData.password);
       console.log('登录验证结果:', result);
       
       if (result.success) {

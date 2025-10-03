@@ -15,5 +15,6 @@ export interface CreateBrandPackData {
   name: string;
   description?: string;
   logo?: string;
+  tags?: string[];
 }
 
