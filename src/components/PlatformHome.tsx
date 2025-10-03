@@ -1133,7 +1133,7 @@ const PlatformHome: React.FC<PlatformHomeProps> = ({ onLogout: _onLogout }) => {
         {/* Logo区域 */}
         <div className="py-3 px-6 border-b border-gray-100 bg-gradient-to-r from-primary-50 to-primary-100">
           <div className="flex items-center justify-center">
-            <img src="/Image831/logo/godiva.jpeg" alt="Mema Logo" className="w-20 h-auto" />
+            <img src="/ai-content-platform-login/memalogo.png" alt="Mema Logo" className="w-20 h-auto" />
           </div>
         </div>
         
