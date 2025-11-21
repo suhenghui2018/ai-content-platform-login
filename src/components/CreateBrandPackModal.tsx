@@ -19,8 +19,8 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   const { t, i18n } = useTranslation();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationStep, setGenerationStep] = useState<'select' | 'main' | 'generating' | 'result'>('select');
-  const [creationMethod, setCreationMethod] = useState<'ai' | 'traditional' | null>(null);
+  const [generationStep, setGenerationStep] = useState<'select' | 'basic-info' | 'main' | 'generating' | 'result'>('select');
+  const [creationMethod, setCreationMethod] = useState<'ai' | 'quick' | null>(null);
   const [currentStep, setCurrentStep] = useState<'basic' | 'analysis' | 'ai-generating' | 'ai-result' | 'modify' | 'confirm'>('basic');
   const [chatStep, setChatStep] = useState<'basic' | 'analysis' | 'ai-result' | 'modify' | 'confirm'>('basic');
   const [isTyping, setIsTyping] = useState(false);
@@ -182,7 +182,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showAgreement, setShowAgreement] = useState(false);
-  const [agreementType, setAgreementType] = useState<'ai' | 'traditional'>('traditional');
+  const [agreementType, setAgreementType] = useState<'ai' | 'quick'>('quick');
 
   // 自定义色彩系统弹窗状态
   const [showCustomColorModal, setShowCustomColorModal] = useState(false);
@@ -570,7 +570,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   // 处理自定义色彩系统保存
   const handleSaveCustomColorSystem = () => {
     if (!customColorData.name.trim()) {
-      showToastMessage('请输入色彩系统名称');
+      showToastMessage(t('pleaseEnterColorSystemName'));
       return;
     }
 
@@ -588,7 +588,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
     }));
     
     setShowCustomColorModal(false);
-    showToastMessage('自定义色彩系统已添加！');
+    showToastMessage(t('customColorSystemAdded'));
   };
 
   // 处理自定义色彩数据更新
@@ -726,13 +726,13 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
     if (file) {
       // 检查文件类型
       if (!file.type.startsWith('image/')) {
-        showToastMessage('请选择图片文件');
+        showToastMessage(t('pleaseSelectImageFile'));
         return;
       }
       
       // 检查文件大小 (限制为2MB)
       if (file.size > 2 * 1024 * 1024) {
-        showToastMessage('图片文件大小不能超过2MB');
+        showToastMessage(t('imageFileSizeExceeded'));
         return;
       }
 
@@ -742,7 +742,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
           id: Date.now(), // 使用时间戳作为唯一ID
           name: file.name.replace(/\.[^/.]+$/, ""), // 去除文件扩展名
           url: e.target?.result as string,
-          description: `上传的Logo: ${file.name}`,
+          description: `${t('uploadedLogo')}: ${file.name}`,
           isUploaded: true
         };
         
@@ -751,7 +751,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
           availableLogos: [...prev.availableLogos, newLogo]
         }));
         
-        showToastMessage('Logo上传成功！');
+        showToastMessage(t('logoUploadSuccess'));
       };
       reader.readAsDataURL(file);
     }
@@ -847,7 +847,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   // 处理保存并更新内容
   const handleSaveAndUpdate = (bubbleType: string) => {
     // 显示保存成功提示
-    showToastMessage('保存成功！');
+    showToastMessage(t('saveSuccess'));
     
     // 自动折叠气泡
     setTimeout(() => {
@@ -1000,7 +1000,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
         handleAIGeneration();
       } else {
         // 显示服务协议弹窗
-        setAgreementType('traditional');
+        setAgreementType('quick');
         setShowAgreement(true);
       }
     }
@@ -1066,16 +1066,44 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
     setGenerationStep('main');
   };
 
-  const handleMethodSelect = (selectedMethod: 'ai' | 'traditional') => {
+  const handleMethodSelect = (selectedMethod: 'ai' | 'quick') => {
     setCreationMethod(selectedMethod);
+    if (selectedMethod === 'ai') {
+      // AI创建：先进入基本信息输入步骤
+      setGenerationStep('basic-info');
+    } else {
+      // 快捷创建：直接进入主界面
+      setGenerationStep('main');
+    }
+  };
+
+  const handleBasicInfoConfirm = () => {
+    // 验证基本信息
+    if (!formData.name.trim()) {
+      setErrors({ name: t('brandPackNameRequired') });
+      return;
+    }
+    if (!formData.description?.trim()) {
+      setErrors({ description: t('brandDescriptionRequired') });
+      return;
+    }
+    // 确认后进入主界面
     setGenerationStep('main');
+    setErrors({});
   };
 
   const handleBackToSelect = () => {
     setGenerationStep('select');
     setCreationMethod(null);
     setCurrentStep('basic');
+    setFormData(prev => ({
+      ...prev,
+      name: '',
+      description: ''
+    }));
+    setErrors({});
   };
+
 
   // const handleNextStep = () => {
   //   const steps = ['basic', 'analysis', 'ai-result', 'modify', 'confirm'];
@@ -1273,7 +1301,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 shadow-sm max-w-sm">
                     <p className="text-sm text-gray-800 mb-3">
                       {guideText}
-                      {guideText.length > 0 && guideText.length < '请输入品牌包的基本信息和品牌包的描述以及访问权限：'.length && (
+                      {guideText.length > 0 && guideText.length < t('pleaseFillBasicInfo').length && (
                         <span className="animate-pulse">|</span>
                       )}
                     </p>
@@ -1638,7 +1666,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                             removeFile(index);
                                           }}
                                           className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all duration-200"
-                                          title="删除文件"
+                                          title={t('deleteFile')}
                                         >
                                           <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1646,7 +1674,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                         </button>
                                       </div>
                                       <p className="text-xs text-gray-500 mt-1">
-                                        文件大小: {(file.size / 1024).toFixed(1)} KB
+                                        {t('fileSize')}: {(file.size / 1024).toFixed(1)} KB
                                       </p>
                                     </div>
                                   </div>
@@ -2775,7 +2803,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                     </button>
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400 text-xs">点击下方logo选择</span>
+                                  <span className="text-gray-400 text-xs">{t('clickBelowToSelectLogo')}</span>
                                 )}
                               </div>
                             </div>
@@ -2785,7 +2813,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                         {/* 可选logo列表 */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <label className="text-xs font-medium text-gray-700">可选择的Logo</label>
+                            <label className="text-xs font-medium text-gray-700">{t('availableLogos')}</label>
                             <label className="text-xs text-primary-600 cursor-pointer hover:text-primary-700 transition-colors">
                               <input
                                 type="file"
@@ -2793,7 +2821,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                 onChange={handleLogoUpload}
                                 className="hidden"
                               />
-                              📁 上传Logo
+                              📁 {t('uploadLogo')}
                             </label>
                           </div>
                           <div className="grid grid-cols-3 gap-2">
@@ -2810,7 +2838,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                 />
                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
                                   <span className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {brandVisualData.selectedLogos.find(l => l.id === logo.id) ? '已选择' : '点击选择'}
+                                    {brandVisualData.selectedLogos.find(l => l.id === logo.id) ? t('selected') : t('clickToSelect')}
                                   </span>
                                 </div>
                                 {logo.isUploaded && (
@@ -2848,7 +2876,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                     </button>
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400 text-xs">点击下方色彩系统选择</span>
+                                  <span className="text-gray-400 text-xs">{t('clickBelowToSelectColorSystem')}</span>
                                 )}
                               </div>
                             </div>
@@ -2880,12 +2908,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                                   <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-1">
                                       <h4 className="text-xs font-medium text-gray-900">{colorSystem.name}</h4>
-                                      {colorSystem.name.includes('自定义') && (
-                                        <span className="text-xs text-blue-600 bg-blue-100 px-1 rounded">自定义</span>
+                                      {(colorSystem.name.includes('自定义') || colorSystem.name.includes('Custom')) && (
+                                        <span className="text-xs text-blue-600 bg-blue-100 px-1 rounded">{t('custom')}</span>
                                       )}
                                     </div>
                                     {brandVisualData.selectedColorSystems.find(cs => cs.id === colorSystem.id) && (
-                                      <span className="text-xs text-green-600">✓ 已选择</span>
+                                      <span className="text-xs text-green-600">✓ {t('selected')}</span>
                                     )}
                                   </div>
                                   
@@ -4319,35 +4347,102 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
     );
   };
 
+  const renderBasicInfo = () => {
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('enterBrandPackBasicInfo')}</h2>
+          <p className="text-gray-600">{t('pleaseEnterBrandPackBasicInfo')}</p>
+        </div>
+        
+        <div className="space-y-6">
+          {/* 品牌包名称 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('brandPackName')} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
+                errors.name ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder={t('pleaseEnterBrandPackName')}
+              maxLength={100}
+            />
+            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+            <div className="text-right text-xs text-gray-500 mt-1">{formData.name.length}/100</div>
+          </div>
+
+          {/* 品牌包简介 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('brandDescriptionOptional')} <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none ${
+                errors.description ? 'border-red-500' : 'border-gray-300'
+              }`}
+              rows={4}
+              placeholder={t('pleaseEnterBrandPackDescription')}
+              maxLength={500}
+            />
+            {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+            <div className="text-right text-xs text-gray-500 mt-1">{formData.description?.length || 0}/500</div>
+          </div>
+
+          {/* 操作按钮 */}
+          <div className="flex items-center justify-end space-x-3 pt-4">
+            <button
+              onClick={handleBackToSelect}
+              className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              onClick={handleBasicInfoConfirm}
+              className="px-6 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium"
+            >
+              {t('confirm')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderSelectContent = () => {
     return (
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* AI生成选项 */}
+          {/* AI创建选项 - 确保在左侧 */}
           <div
-            className="relative bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border-2 cursor-pointer transition-all duration-300 border-purple-200 hover:border-purple-300 hover:shadow-md"
+            className="relative bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border-2 cursor-pointer transition-all duration-300 border-purple-200 hover:border-purple-300 hover:shadow-md order-1"
             onClick={() => handleMethodSelect('ai')}
           >
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl text-white">🤖</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('aiSmartGeneration')}</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('aiCreation')}</h3>
               <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                {t('aiGenerationDesc')}
+                {t('aiCreationDesc')}
               </p>
               <div className="space-y-2 text-xs text-gray-500">
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
-                  {t('autoGenerateLogo')}
+                  {t('intelligentBrandAnalysis')}
                 </div>
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
-                  {t('smartColorScheme')}
+                  {t('autoGenerateContent')}
                 </div>
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
-                  {t('quickContentGeneration')}
+                  {t('smartRecommendations')}
                 </div>
               </div>
             </div>
@@ -4358,37 +4453,37 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
             </div>
           </div>
 
-          {/* 传统构建选项 */}
+          {/* 快捷创建选项 - 确保在右侧 */}
           <div
-            className="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 cursor-pointer transition-all duration-300 border-blue-200 hover:border-blue-300 hover:shadow-md"
-            onClick={() => handleMethodSelect('traditional')}
+            className="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 cursor-pointer transition-all duration-300 border-blue-200 hover:border-blue-300 hover:shadow-md order-2"
+            onClick={() => handleMethodSelect('quick')}
           >
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl text-white">✏️</span>
+                <span className="text-3xl text-white">⚡</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('traditionalConstruction')}</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{t('quickCreation')}</h3>
               <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                {t('traditionalConstructionDesc')}
+                {t('quickCreationDesc')}
               </p>
               <div className="space-y-2 text-xs text-gray-500">
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                  {t('manuallyUploadLogo')}
+                  {t('fastSetup')}
                 </div>
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                  {t('customColorScheme')}
+                  {t('manualConfiguration')}
                 </div>
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                  {t('preciseControl')}
+                  {t('fullControl')}
                 </div>
               </div>
             </div>
             <div className="absolute top-4 right-4">
               <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">{t('hand')}</span>
+                <span className="text-white text-xs">⚡</span>
               </div>
             </div>
           </div>
@@ -4647,6 +4742,28 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
           </div>
         </div>
       );
+    } else if (generationStep === 'basic-info') {
+      return (
+        <div className="px-6 py-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <button
+                onClick={handleBackToSelect}
+                className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center mr-3 transition-colors"
+              >
+                <span className="text-gray-600 text-sm">←</span>
+              </button>
+              <h2 className="text-lg font-semibold text-gray-900">{t('aiCreation')}</h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+            >
+              <span className="text-gray-500 text-lg">×</span>
+            </button>
+          </div>
+        </div>
+      );
     } else if (generationStep === 'main') {
       return (
         <div className="px-6 py-4 border-b border-gray-200 bg-white">
@@ -4659,7 +4776,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
                 <span className="text-gray-600 text-sm">←</span>
               </button>
               <h2 className="text-lg font-semibold text-gray-900">
-                {creationMethod === 'ai' ? t('aiSmartGeneration') : t('traditionalConstruction')}
+                {creationMethod === 'ai' ? t('aiSmartGeneration') : t('quickCreation')}
               </h2>
             </div>
             <div className="flex items-center space-x-2">
@@ -4757,11 +4874,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   if (fullscreen) {
     return (
       <div className={`bg-white w-full h-full ${
-        generationStep === 'main' ? 'max-w-7xl' : 'max-w-2xl'
+        generationStep === 'main' ? 'max-w-7xl' : generationStep === 'basic-info' ? 'max-w-2xl' : 'max-w-2xl'
       }`}>
         {renderHeader()}
         
         {generationStep === 'select' && renderSelectContent()}
+        {generationStep === 'basic-info' && renderBasicInfo()}
         {generationStep === 'main' && (
           <>
             {renderProgressSteps()}
@@ -4770,7 +4888,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
         )}
         {generationStep === 'generating' && creationMethod === 'ai' && renderAIContent()}
         {generationStep === 'result' && creationMethod === 'ai' && renderAIContent()}
-        {generationStep === 'main' && creationMethod === 'traditional' && renderTraditionalContent()}
+        {generationStep === 'main' && creationMethod === 'quick' && renderTraditionalContent()}
       </div>
     );
   }
@@ -4779,11 +4897,12 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className={`bg-white rounded-2xl shadow-2xl w-full ${
-        generationStep === 'main' ? 'max-w-7xl' : 'max-w-2xl'
+        generationStep === 'main' ? 'max-w-7xl' : generationStep === 'basic-info' ? 'max-w-2xl' : 'max-w-2xl'
       }`}>
         {renderHeader()}
         
         {generationStep === 'select' && renderSelectContent()}
+        {generationStep === 'basic-info' && renderBasicInfo()}
         {generationStep === 'main' && (
           <>
             {renderProgressSteps()}
@@ -4792,7 +4911,7 @@ const CreateBrandPackModal: React.FC<CreateBrandPackModalProps> = ({
         )}
         {generationStep === 'generating' && creationMethod === 'ai' && renderAIContent()}
         {generationStep === 'result' && creationMethod === 'ai' && renderAIContent()}
-        {generationStep === 'main' && creationMethod === 'traditional' && renderTraditionalContent()}
+        {generationStep === 'main' && creationMethod === 'quick' && renderTraditionalContent()}
       </div>
       
       {/* Toast提示 */}

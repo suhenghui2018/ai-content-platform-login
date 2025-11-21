@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       // 检查是否为Mema测试用户
-      if (username === 'mema@radicasys.com' && password === 'mema123') {
+      if (username === 'mema@radicasys.com' && password === 'radica123') {
         const memaUser: User = {
           id: 'mema-user-1',
           username: 'mema',

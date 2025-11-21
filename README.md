@@ -123,6 +123,18 @@ colors: {
 - 用户数据存储在浏览器本地存储中，刷新页面数据不会丢失
 - 支持用户管理、数据导出、重置等功能
 
+## 部署
+
+### 部署到 GitHub Pages
+
+项目已配置 GitHub Actions 自动部署。只需要：
+
+1. 将代码推送到 GitHub 仓库
+2. 在仓库 Settings → Pages 中启用 GitHub Actions
+3. 访问 `https://YOUR_USERNAME.github.io/ai-content-platform-login/`
+
+详细部署说明请查看 [DEPLOY_TO_GITHUB.md](./DEPLOY_TO_GITHUB.md)
+
 ## 许可证
 
 MIT License

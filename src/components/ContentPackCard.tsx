@@ -133,7 +133,7 @@ const ContentPackCard: React.FC<ContentPackCardProps> = ({
                   className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left flex items-center"
                 >
                   <span className="mr-2">✏️</span>
-                  编辑
+                  {t('edit')}
                 </button>
               )}
               {onToggleStatus && (
@@ -142,7 +142,7 @@ const ContentPackCard: React.FC<ContentPackCardProps> = ({
                   className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left flex items-center"
                 >
                   <span className="mr-2">🔄</span>
-                  {contentPack.status === 'published' ? '设为草稿' : '发布'}
+                  {contentPack.status === 'published' ? t('setToDraft') : t('publish')}
                 </button>
               )}
               {onDelete && (
@@ -151,7 +151,7 @@ const ContentPackCard: React.FC<ContentPackCardProps> = ({
                   className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left flex items-center"
                 >
                   <span className="mr-2">🗑️</span>
-                  删除
+                  {t('delete')}
                 </button>
               )}
             </div>
@@ -185,8 +185,8 @@ const ContentPackCard: React.FC<ContentPackCardProps> = ({
 
         {/* 统计信息 */}
         <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-          <span>{contentPack.contentCount} 个内容</span>
-          <span>更新于 {contentPack.updatedAt}</span>
+          <span>{contentPack.contentCount} {t('contents')}</span>
+          <span>{t('updatedAt')} {contentPack.updatedAt}</span>
         </div>
 
         {/* 创建者信息 */}
@@ -202,12 +202,12 @@ const ContentPackCard: React.FC<ContentPackCardProps> = ({
             <div>
               <p className="text-sm font-medium text-gray-900">{contentPack.creator}</p>
               <p className="text-xs text-gray-500">
-                {contentPack.isShared ? `分享自 ${contentPack.sharedBy}` : '创建者'}
+                {contentPack.isShared ? `${t('sharedBy')} ${contentPack.sharedBy}` : t('creator')}
               </p>
             </div>
           </div>
           <div className="flex items-center text-primary-600 text-sm font-medium group-hover:text-primary-700 transition-colors">
-            查看详情
+            {t('viewDetails')}
             <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

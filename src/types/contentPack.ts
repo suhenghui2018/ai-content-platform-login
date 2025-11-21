@@ -22,9 +22,16 @@ export interface ProjectSettings {
   goal: string;
 }
 
+export interface Expert {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export interface CreateContentPackData {
   name: string;
   description: string;
   coverImage?: string;
   projectSettings?: ProjectSettings;
+  selectedExperts?: Expert[];
 }

@@ -16,16 +16,35 @@ interface ContentCard {
   width: number;
   height: number;
   zIndex: number;
-  selectedTemplate?: string; // 新增：存储选中的邮件模板ID
 }
+
 
 // 邮件模板接口
 interface EmailTemplate {
   id: string;
-  title: string;
-  preview: string; // 预览内容
-  content: string; // 完整内容
-  thumbnail: string; // 缩略图描述
+  name: string;
+  description: string;
+  preview: string; // 预览图片URL或base64
+  category: string;
+  htmlContent?: string; // HTML邮件内容
+}
+
+// 邮件长度类型
+type EmailLength = 'short' | 'medium' | 'long';
+
+// CTA类型
+interface CTASettings {
+  text: string;
+  url: string;
+  color: string;
+}
+
+// 热门话题接口
+interface TrendingTopic {
+  id: string;
+  text: string;
+  hashtag: string;
+  popularity: number;
 }
 
 const ContentCreationPage: React.FC = () => {
@@ -65,46 +84,899 @@ const ContentCreationPage: React.FC = () => {
   const [extractionTimeLeft, setExtractionTimeLeft] = useState(30);
   
   // 邮件模板相关状态
-  const [selectedEmailTemplate, setSelectedEmailTemplate] = useState<string | null>(null);
-  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
-  const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
-  const emailTemplates = [
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+  const [selectedLength, setSelectedLength] = useState<EmailLength>('medium');
+  const [ctaSettings, setCtaSettings] = useState<CTASettings>({
+    text: '立即购买',
+    url: '',
+    color: '#3B82F6'
+  });
+  const [selectedTopics, setSelectedTopics] = useState<TrendingTopic[]>([]);
+  const [showTopicsModal, setShowTopicsModal] = useState(false);
+  const [generatedEmail, setGeneratedEmail] = useState<string>('');
+  const [showHtmlPreview, setShowHtmlPreview] = useState(false);
+  const [htmlPreviewContent, setHtmlPreviewContent] = useState<string>('');
+  const [showEmailEditor, setShowEmailEditor] = useState(false);
+  const [emailEditorContent, setEmailEditorContent] = useState<string>('');
+  const [uploadMenuOpenId, setUploadMenuOpenId] = useState<string | null>(null);
+  
+  // 邮件模板数据
+  const emailTemplates: EmailTemplate[] = [
     {
-      id: 'template1',
-      title: '营销推广模板',
-      preview: '适用于产品营销推广的邮件模板，包含引人注目的标题和清晰的行动号召。',
-      content: `📧 营销推广邮件\n\n主题：{{产品名称}} 限时优惠\n\n尊敬的 {{收件人姓名}}，\n\n📣 激动人心的消息！我们很高兴地宣布 {{产品名称}} 正在进行限时优惠活动。\n\n✨ 产品亮点：\n• 高品质材料\n• 独特设计\n• 限时折扣 {{折扣}}%\n\n⏰ 活动时间有限，立即行动！\n\n[立即购买] [了解更多]\n\n如有任何问题，请随时联系我们的客服团队。\n\n祝您购物愉快！\n\n{{公司名称}} 团队`,
-      thumbnail: '营销邮件缩略图'
+      id: 'template-a',
+      name: '营销推广模板',
+      description: '适用于产品营销推广，包含引人注目的标题和清晰的行动号召',
+      preview: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjEwIiB5PSIyMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMzc0MTUxIj7nlLXohJHlupTnlKjmiYvmnLogQTwvdGV4dD4KPHRleHQgeD0iMTAiIHk9IjQwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM2QjcyODAiPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD4KPHRleHQgeD0iMTAiIHk9IjYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5Q0EzQUYiPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD4KPC9zdmc+',
+      category: '营销',
+      htmlContent: `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godiva 2025 方形朱古力 | 會員尊享預購</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Open+Sans:wght@300;400;600&display=swap');
+    </style>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Open Sans', Arial, sans-serif; color: #5C3A21; background-color: #F9F5F0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
+        <!-- 主題行和預覽文本（在郵件客戶端中顯示） -->
+        <!-- 主題: {{高級會員}}專屬 | 搶先預購Godiva 2025方形朱古力，尊享9.5折 -->
+        <!-- 預覽文本: 親愛的{{MemberName}}，您作為Godiva高級會員，特邀您於2025年6月5日前優先預購限量新品。 -->
+        
+        <!-- 頭部品牌LOGO -->
+        <tr>
+            <td align="center" style="padding: 25px 0; background-color: #FFFFFF;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; border-collapse: collapse;">
+                    <tr>
+                        <td align="center">
+                            <img src="https://s1.imagehub.cc/images/2025/08/23/7e1afb810ac8c39809aaf682bd5040f8.png" alt="Godiva Chocolatier" width="180" style="display: block; border: 0; max-width: 180px; height: auto;">
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        
+        <!-- 主視覺區域 -->
+        <tr>
+            <td align="center" style="padding: 0; background: linear-gradient(to bottom, #FFFFFF, #F9F5F0);">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; border-collapse: collapse;">
+                    <tr>
+                        <td align="center" style="padding: 20px 0 30px;">
+                            <img src="https://s1.imagehub.cc/images/2025/06/16/938a13909e7373e86176fff0d9e0a043.jpg" alt="Godiva 2025 方形朱古力" width="100%" style="display: block; border: 0; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(92, 58, 33, 0.15);">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding: 0 20px 20px;">
+                            <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 32px; font-weight: 700; color: #5C3A21; margin: 0; line-height: 1.2;">2025方形朱古力系列</h1>
+                            <p style="font-size: 18px; color: #8C6D46; margin: 10px 0 0;">高級會員尊享預購即將開啟</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        
+        <!-- 倒計時組件 -->
+        <tr>
+            <td align="center" style="padding: 0; background-color: #F9F5F0;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; border-collapse: collapse;">
+                    <tr>
+                        <td align="center" style="padding: 15px 20px; background-color: #5C3A21; color: #FFFFFF; border-radius: 8px; margin: 0 20px;">
+                            <h2 style="font-family: 'Playfair Display', Georgia, serif; font-size: 20px; margin: 0 0 10px; font-weight: 700;">預購開啟倒計時</h2>
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; border-collapse: collapse;">
+                                <tr>
+                                    <td align="center" style="padding: 8px 12px; background-color: #8C6D46; border-radius: 4px; margin: 0 5px;">
+                                        <span style="font-size: 24px; font-weight: bold;">05</span>
+                                        <br>
+                                        <span style="font-size: 12px;">天</span>
+                                    </td>
+                                    <td align="center" style="padding: 8px 12px; background-color: #8C6D46; border-radius: 4px; margin: 0 5px;">
+                                        <span style="font-size: 24px; font-weight: bold;">12</span>
+                                        <br>
+                                        <span style="font-size: 12px;">時</span>
+                                    </td>
+                                    <td align="center" style="padding: 8px 12px; background-color: #8C6D46; border-radius: 4px; margin: 0 5px;">
+                                        <span style="font-size: 24px; font-weight: bold;">45</span>
+                                        <br>
+                                        <span style="font-size: 12px;">分</span>
+                                    </td>
+                                    <td align="center" style="padding: 8px 12px; background-color: #8C6D46; border-radius: 4px; margin: 0 5px;">
+                                        <span style="font-size: 24px; font-weight: bold;">30</span>
+                                        <br>
+                                        <span style="font-size: 12px;">秒</span>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 14px; margin: 15px 0 0;">預購開啟時間: 2025年6月5日 上午10:00</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        
+        <!-- 產品亮點 -->
+        <tr>
+            <td align="center" style="padding: 30px 0; background-color: #F9F5F0;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 0 20px;">
+                            <h2 style="font-family: 'Playfair Display', Georgia, serif; font-size: 24px; color: #5C3A21; border-left: 4px solid #D4AF37; padding-left: 15px;">尊享會員特權</h2>
+                            <p style="font-size: 16px; line-height: 1.6;">親愛的{{MemberName}}，您作為Godiva高級會員，我們誠摯邀請您優先預購全新2025方形朱古力系列。這款限量新品融合了東西方風味靈感，採用最優質的可可豆精製而成，每一口都是奢華的味覺盛宴。</p>
+                            
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 25px 0; border-collapse: collapse;">
+                                <tr>
+                                    <td width="33%" align="center" style="padding: 10px;">
+                                        <img src="https://s1.imagehub.cc/images/2025/06/16/dc0472537187030ae716558ba0f94e27.jpg" alt="精美包裝" width="100%" style="display: block; border: 0; max-width: 100%; height: auto; border-radius: 6px;">
+                                        <p style="font-size: 14px; margin: 10px 0 0; color: #8C6D46;">典雅金色包裝</p>
+                                    </td>
+                                    <td width="33%" align="center" style="padding: 10px;">
+                                        <img src="https://s1.imagehub.cc/images/2025/06/16/53d75b3bcf7530b54e5b02078f8a6948.jpg" alt="多樣口味" width="100%" style="display: block; border: 0; max-width: 100%; height: auto; border-radius: 6px;">
+                                        <p style="font-size: 14px; margin: 10px 0 0; color: #8C6D46;">八種獨特風味</p>
+                                    </td>
+                                    <td width="33%" align="center" style="padding: 10px;">
+                                        <img src="https://s1.imagehub.cc/images/2025/06/16/e273c2393f14c15d8f76d3552ed4b1b7.jpg" alt="精緻工藝" width="100%" style="display: block; border: 0; max-width: 100%; height: auto; border-radius: 6px;">
+                                        <p style="font-size: 14px; margin: 10px 0 0; color: #8C6D46;">手工精製工藝</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <ul style="font-size: 16px; line-height: 1.6; padding-left: 20px; margin: 20px 0;">
+                                <li>全球限量發售，僅對高級會員開放預購</li>
+                                <li>尊享<span style="font-weight: bold; color: #D4AF37;">9.5折</span>獨家優惠</li>
+                                <li>優先發貨權，比公眾提前一週收到產品</li>
+                                <li>專屬禮品包裝及定制賀卡服務</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        
+        <!-- 行動呼籲按鈕 -->
+        <tr>
+            <td align="center" style="padding: 0 0 40px; background-color: #F9F5F0;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; border-collapse: collapse;">
+                    <tr>
+                        <td align="center" style="padding: 0 20px;">
+                            <a href="https://e.tb.cn/h.6BUaa8HJRtnKoZe?tk=thVbVLgDHfa" style="display: inline-block; padding: 16px 40px; background-color: #D4AF37; color: #FFFFFF; font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 700; text-decoration: none; border-radius: 30px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);">立即預購</a>
+                            <p style="font-size: 14px; color: #8C6D46; margin: 15px 0 0;">預購期: 2025年6月5日 - 6月12日</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        
+        <!-- 頁腳 -->
+        <tr>
+            <td align="center" style="padding: 30px 0; background-color: #FFFFFF; border-top: 1px solid #F0E6D9;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; border-collapse: collapse;">
+                    <tr>
+                        <td align="center" style="padding: 0 20px 20px;">
+                            <!-- 社交圖標 -->
+                            <div style="margin-bottom: 20px;">
+                                <a href="{{SocialLinks}}" style="display: inline-block; margin: 0 10px;"><img src="https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/facebook-icon-2x.png" alt="Facebook" width="28" height="28" style="border: 0;"></a>
+                                <a href="{{SocialLinks}}" style="display: inline-block; margin: 0 10px;"><img src="https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/instagram-icon-2x.png" alt="Instagram" width="28" height="28" style="border: 0;"></a>
+                                <a href="{{SocialLinks}}" style="display: inline-block; margin: 0 10px;"><img src="https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/twitter-icon-2x.png" alt="Twitter" width="28" height="28" style="border: 0;"></a>
+                            </div>
+                            
+                            <!-- 公司地址和聯繫方式 -->
+                            <p style="font-size: 12px; color: #8C6D46; line-height: 1.6; margin: 0 0 10px;">
+                                {{CompanyAddress}}<br>
+                                客服郵箱: <a href="mailto:{{ContactEmail}}" style="color: #8C6D46; text-decoration: underline;">{{ContactEmail}}</a>
+                            </p>
+                            
+                            <!-- 退訂鏈接 -->
+                            <p style="font-size: 12px; color: #8C6D46;">
+                                <a href="{{UnsubscribeURL}}" style="color: #8C6D46; text-decoration: underline;">退訂郵件</a>
+                            </p>
+                            
+                            <!-- 版權信息 -->
+                            <p style="font-size: 12px; color: #8C6D46; margin: 20px 0 0;">
+                                © 2025 Godiva Chocolatier. 保留所有權利。
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`
     },
     {
-      id: 'template2', 
-      title: '活动邀请模板',
-      preview: '用于活动邀请的邮件模板，包含活动详情和报名链接。',
-      content: `📧 活动邀请邮件\n\n主题：诚挚邀请您参加 {{活动名称}}\n\n亲爱的 {{收件人姓名}}，\n\n🎉 我们诚挚地邀请您参加即将举行的 {{活动名称}}！\n\n📅 活动时间：{{活动日期}} {{活动时间}}\n📍 活动地点：{{活动地点}}\n\n📌 活动亮点：\n• 行业专家分享\n• 产品体验\n•  networking机会\n\n[立即报名] [添加到日历]\n\n期待您的参与！\n\n{{组织名称}} 团队`,
-      thumbnail: '活动邀请缩略图'
+      id: 'template-b',
+      name: '品牌推广模板',
+      description: '专业品牌推广邮件，包含产品介绍和品牌体验',
+      preview: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjMzI0NzJmIi8+Cjx0ZXh0IHg9IjEwIiB5PSIyMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjZmZmZmZmIj5TdGFyYnVja3M8L3RleHQ+Cjx0ZXh0IHg9IjEwIiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj7nlLXohJHlupTnlKjmiYvmnLogQjwvdGV4dD4KPHRleHQgeD0iMTAiIHk9IjYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiNmZmZmZmYiPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD4KPC9zdmc+',
+      category: '品牌',
+      htmlContent: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0," />
+    <meta name="x-apple-disable-message-reformatting">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>{{BRAND_NAME}}</title>
+    <style>
+      body { width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; margin: 0; padding: 0; }
+      table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; padding: 0; border-spacing: 0px; }
+      table td { border-collapse: collapse; mso-line-height-rule: exactly; padding: 0; margin: 0px; }
+      .email-container { max-width: 640px; margin: 0 auto; background-color: #c1c594; }
+      .header { background-color: #32472f; padding: 0; text-align: center; }
+      .header img { width: 100%; height: auto; display: block; }
+      .hero-section { background-color: #c1c594; text-align: center; }
+      .hero-image { width: 100%; height: auto; display: block; }
+      .main-title { font-family: 'Lander Short', Cambria, serif; font-size: 54px; line-height: 76px; color: #32472f; text-align: center; padding: 24px 20px 2px; font-weight: 300; }
+      .subtitle { font-family: 'SoDo Sans', Arial, sans-serif; font-size: 26px; line-height: 44px; color: #32472f; text-align: center; padding: 12px 20px 8px; font-weight: bold; }
+      .description { font-family: 'SoDo Sans', Arial, sans-serif; font-size: 24px; line-height: 32px; color: #32472f; text-align: center; padding: 22px 46px 24px; }
+      .cta-button { display: block; margin: 24px auto 58px; }
+      .features-section { background-color: #fbf5e7; margin: 0 40px; border-radius: 15px; padding: 38px 100px 32px; }
+      .features-title { font-family: 'SoDo Sans', Arial, sans-serif; font-size: 38px; line-height: 44px; color: #32472f; text-align: center; font-weight: bold; }
+      .feature-item { display: flex; align-items: center; margin-bottom: 36px; }
+      .feature-image { width: 176px; height: 176px; }
+      .feature-text { flex: 1; padding: 0 20px; }
+      .feature-title { font-family: 'SoDo Sans', Arial, sans-serif; font-size: 22px; line-height: 30px; color: #32472f; font-weight: bold; margin-bottom: 10px; }
+      .feature-desc { font-family: 'SoDo Sans', Arial, sans-serif; font-size: 18px; line-height: 20px; color: #32472f; }
+      .footer-icons { background-color: #32472f; padding: 28px 0; }
+      .icon-grid { display: flex; justify-content: space-around; max-width: 640px; margin: 0 auto; }
+      .icon-item { text-align: center; color: #ffffff; }
+      .icon-item img { width: 42px; height: 42px; margin-bottom: 6px; }
+      .icon-text { font-family: 'SoDo Sans', Arial, sans-serif; font-size: 14px; color: #ffffff; }
+      .social-icons { text-align: center; padding: 25px 0 30px; }
+      .social-icons img { width: 26px; height: 26px; margin: 0 20px; }
+      .footer-text { font-family: 'SoDo Sans', Arial, sans-serif; font-size: 14px; line-height: 20px; color: #707070; text-align: center; padding: 0 11% 10px; }
+      .legal-text { font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <!-- Header -->
+      <div class="header">
+        <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Mastheads/EN/Starbucks_32472f.png" alt="{{BRAND_NAME}}" />
+      </div>
+      
+      <!-- Hero Section -->
+      <div class="hero-section">
+        <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Images/FY25/25-19-NWSL-1-0-0_Hero.png" alt="产品展示" class="hero-image" />
+        <div class="main-title">A new way to refresh</div>
+        <div class="subtitle">Introducing {{PRODUCT_NAME}}</div>
+        <div class="description">{{PRODUCT_DESCRIPTION}}</div>
+        <a href="{{CTA_URL}}" class="cta-button">
+          <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/CTAs/OrderNow_32472f_TFFF_Bc1c594.png" alt="{{CTA_TEXT}}" />
+        </a>
+      </div>
+      
+      <!-- Features Section -->
+      <div class="features-section">
+        <div class="features-title">More reasons to stay awhile</div>
+        
+        <div class="feature-item">
+          <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Images/FY25/25-19-NWSL-1-0-0-Mod2.png" alt="特色1" class="feature-image" />
+          <div class="feature-text">
+            <div class="feature-title">Free refills</div>
+            <div class="feature-desc">All for-here orders now include freshly brewed refills on hot or iced coffee and tea. You can order as many refills as you'd like.</div>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-text">
+            <div class="feature-title">Condiment bar</div>
+            <div class="feature-desc">It's back. Now you can add the finishing touches to your drink—so you'll always get your perfect amount of cream and sugar.</div>
+          </div>
+          <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Images/FY25/25-19-NWSL-1-0-0-Mod3.png" alt="特色2" class="feature-image" />
+        </div>
+        
+        <div class="feature-item">
+          <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Images/FY25/25-19-NWSL-1-0-0-Mod4.png" alt="特色3" class="feature-image" />
+          <div class="feature-text">
+            <div class="feature-title">For-here orders</div>
+            <div class="feature-desc">Catching up with a friend or hunkering down with your laptop? Order your drink for here and enjoy it in a mug or glass.</div>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-text">
+            <div class="feature-title">Nondairy milk</div>
+            <div class="feature-desc">Now you can customize your drink with your favorite nondairy milk—like soy, coconut, almond or oat—at no extra cost.</div>
+          </div>
+          <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Images/FY25/25-19-NWSL-1-0-0-Mod5.png" alt="特色4" class="feature-image" />
+        </div>
+        
+        <a href="{{CTA_URL}}" style="display: block; margin: 48px auto 0;">
+          <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/CTAs/LearnMore_32472f_TFFF_fbf5e7.png" alt="了解更多" />
+        </a>
+      </div>
+      
+      <!-- Footer Icons -->
+      <div class="footer-icons">
+        <div class="icon-grid">
+          <div class="icon-item">
+            <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Icons/SRHeaderFooter_Final0806_select_42_White.png" alt="APP" />
+            <div class="icon-text">APP</div>
+          </div>
+          <div class="icon-item">
+            <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Icons/SRHeaderFooter_Final0806_cup_42_White.png" alt="ORDER" />
+            <div class="icon-text">ORDER</div>
+          </div>
+          <div class="icon-item">
+            <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Icons/SRHeaderFooter_Final0806_stars_42_White.png" alt="OFFERS" />
+            <div class="icon-text">OFFERS</div>
+          </div>
+          <div class="icon-item">
+            <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Icons/SRHeaderFooter_Final0806_gift_42_White.png" alt="REWARDS" />
+            <div class="icon-text">REWARDS</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Social Icons -->
+      <div class="social-icons">
+        <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Icons/social_Instagram_icon_52x52.png" alt="Instagram" />
+        <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Icons/social_TikTok_icon_52x52.png" alt="TikTok" />
+        <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Icons/social_Facebook_icon_52x52.png" alt="Facebook" />
+        <img src="https://i.a.starbucks.com/wpm/1161/ContentUploads/Teleion/Icons/social_X_icon_52x52.png" alt="X" />
+      </div>
+      
+      <!-- Footer Text -->
+      <div class="footer-text">
+        <span class="legal-text">Free refills on hot and iced brewed coffee and tea during same store visit. Excludes Cold Brew and Nitro Cold Brew, Iced Tea Lemonade, flavored Iced Tea and Starbucks Refreshers® base. Initial purchase must be made in a reusable cup or "for-here" serveware. At participating stores.</span>
+        <br /><br />
+        This email was sent to {{RECIPIENT_EMAIL}}.
+        <a href="#" style="color:#707070; text-decoration:underline;">Unsubscribe</a>.
+        <br /><br />
+        Questions? <a href="#" style="color:#707070; text-decoration:underline;">Contact us here</a>.
+        <br /><br />
+        © 2025 {{BRAND_NAME}} Company.
+      </div>
+    </div>
+  </body>
+</html>`
     },
     {
-      id: 'template3',
-      title: '新品发布模板',
-      preview: '用于新产品发布的邮件模板，突出产品特点和创新点。',
-      content: `📧 新品发布邮件\n\n主题：全新 {{产品名称}} 正式发布！\n\n亲爱的 {{收件人姓名}}，\n\n🚀 激动人心的时刻！我们很高兴地宣布 {{产品名称}} 正式发布了！\n\n💡 为什么选择我们：\n• 创新技术\n• 卓越性能\n• 用户友好设计\n\n📱 了解更多产品详情：[产品链接]\n\n作为我们的尊贵客户，您可以享受专属优惠：[优惠详情]\n\n感谢您一直以来的支持！\n\n{{公司名称}} 团队`,
-      thumbnail: '新品发布缩略图'
+      id: 'template-c',
+      name: '会员尊享模板',
+      description: '高端会员专属邮件，包含倒计时、特权展示和产品图库',
+      preview: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjZjlmNWYwIi8+Cjx0ZXh0IHg9IjEwIiB5PSIyMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNWMzYTIxIj5Hb2RpdmE8L3RleHQ+Cjx0ZXh0IHg9IjEwIiB5PSI0MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjNWMzYTIxIj7nlLXohJHlupTnlKjmiYvmnLogQzwvdGV4dD4KPHRleHQgeD0iMTAiIHk9IjYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM1YzNhMjEiPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD4KPC9zdmc+',
+      category: '会员',
+      htmlContent: `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{BRAND_NAME}} {{PRODUCT_NAME}} | {{MEMBER_TYPE}}尊享預購</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Montserrat:wght@300;400;500&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', Arial, sans-serif;
+            background-color: #f9f5f0;
+            color: #5c3a21;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        .email-container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #d4af37;
+            box-shadow: 0 0 30px rgba(92, 58, 33, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 25px 20px;
+            background: linear-gradient(to bottom, #8c6d46, #5c3a21);
+            border-bottom: 2px solid #d4af37;
+        }
+        
+        .logo {
+            max-width: 180px;
+            height: auto;
+        }
+        
+        .hero {
+            position: relative;
+            text-align: center;
+            overflow: hidden;
+        }
+        
+        .hero-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .hero-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(92, 58, 33, 0.85), transparent);
+            padding: 30px 20px 20px;
+            text-align: center;
+        }
+        
+        .hero-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: #f8f3e6;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .hero-subtitle {
+            font-size: 18px;
+            color: #d4af37;
+            margin: 10px 0 0;
+            font-weight: 500;
+        }
+        
+        .countdown-section {
+            background: #f8f3e6;
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid #d4af37;
+        }
+        
+        .countdown-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            color: #5c3a21;
+            margin: 0 0 20px;
+        }
+        
+        .countdown-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 0 auto;
+            max-width: 500px;
+        }
+        
+        .countdown-box {
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px solid #d4af37;
+            border-radius: 8px;
+            padding: 15px 10px;
+            min-width: 70px;
+            text-align: center;
+        }
+        
+        .countdown-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #5c3a21;
+            display: block;
+            line-height: 1;
+        }
+        
+        .countdown-label {
+            font-size: 12px;
+            color: #8c6d46;
+            text-transform: uppercase;
+            margin-top: 8px;
+            display: block;
+        }
+        
+        .product-section {
+            padding: 40px 20px;
+            background: #f8f3e6;
+        }
+        
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            color: #5c3a21;
+            text-align: center;
+            margin: 0 0 30px;
+            position: relative;
+            padding-bottom: 15px;
+        }
+        
+        .section-title:after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 2px;
+            background: #d4af37;
+        }
+        
+        .product-intro {
+            font-size: 16px;
+            line-height: 1.6;
+            text-align: center;
+            margin: 0 0 30px;
+            color: #5c3a21;
+        }
+        
+        .highlight-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .highlight-item {
+            text-align: center;
+            padding: 20px 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            border: 1px solid #d4af37;
+            box-shadow: 0 4px 12px rgba(92, 58, 33, 0.1);
+        }
+        
+        .highlight-icon {
+            font-size: 32px;
+            color: #8c6d46;
+            margin-bottom: 15px;
+        }
+        
+        .highlight-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            color: #5c3a21;
+            margin: 0 0 10px;
+        }
+        
+        .highlight-desc {
+            font-size: 14px;
+            color: #5c3a21;
+            margin: 0;
+        }
+        
+        .gallery-section {
+            padding: 20px;
+            background: #f8f3e6;
+        }
+        
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .gallery-item {
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #d4af37;
+            box-shadow: 0 4px 8px rgba(92, 58, 33, 0.15);
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .cta-section {
+            padding: 40px 20px;
+            text-align: center;
+            background: linear-gradient(to bottom, #f8f3e6, #e8dfca);
+        }
+        
+        .cta-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            color: #5c3a21;
+            margin: 0 0 20px;
+        }
+        
+        .cta-text {
+            font-size: 16px;
+            color: #5c3a21;
+            margin: 0 0 30px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            padding: 18px 45px;
+            background: linear-gradient(to right, #8c6d46, #5c3a21);
+            color: #f8f3e6;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(92, 58, 33, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(92, 58, 33, 0.5);
+            background: linear-gradient(to right, #5c3a21, #8c6d46);
+        }
+        
+        .footer {
+            padding: 30px 20px;
+            background: linear-gradient(to bottom, #5c3a21, #3e2817);
+            border-top: 2px solid #d4af37;
+            text-align: center;
+            color: #f8f3e6;
+        }
+        
+        .social-links {
+            margin-bottom: 20px;
+        }
+        
+        .social-icon {
+            display: inline-block;
+            margin: 0 12px;
+            width: 36px;
+            height: 36px;
+            background: #8c6d46;
+            border-radius: 50%;
+            line-height: 36px;
+            text-align: center;
+            color: #f8f3e6;
+            text-decoration: none;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .social-icon:hover {
+            background: #d4af37;
+            color: #5c3a21;
+            transform: translateY(-3px);
+        }
+        
+        .footer-text {
+            font-size: 12px;
+            color: #d4af37;
+            line-height: 1.6;
+            margin: 0 0 10px;
+        }
+        
+        .footer-link {
+            color: #f8f3e6;
+            text-decoration: none;
+        }
+        
+        .footer-link:hover {
+            text-decoration: underline;
+            color: #d4af37;
+        }
+        
+        @media (max-width: 600px) {
+            .highlight-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .countdown-container {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .countdown-box {
+                min-width: 60px;
+                padding: 12px 8px;
+            }
+            
+            .countdown-value {
+                font-size: 26px;
+            }
+            
+            .hero-title {
+                font-size: 28px;
+            }
+            
+            .section-title {
+                font-size: 24px;
+            }
+            
+            .cta-button {
+                padding: 15px 30px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <center>
+        <div class="email-container">
+            <!-- 头部品牌LOGO -->
+            <div class="header">
+                <img src="https://s1.imagehub.cc/images/2025/08/23/7e1afb810ac8c39809aaf682bd5040f8.png" alt="{{BRAND_NAME}}" class="logo">
+            </div>
+            
+            <!-- 主视觉区域 -->
+            <div class="hero">
+                <img src="https://s1.imagehub.cc/images/2025/06/16/938a13909e7373e86176fff0d9e0a043.jpg" alt="{{PRODUCT_NAME}}" class="hero-image">
+                <div class="hero-overlay">
+                    <h1 class="hero-title">{{PRODUCT_NAME}}</h1>
+                    <p class="hero-subtitle">{{MEMBER_TYPE}}尊享預購即將開啟</p>
+                </div>
+            </div>
+            
+            <!-- 倒计时组件 -->
+            <div class="countdown-section">
+                <h2 class="countdown-title">預購開啟倒計時</h2>
+                <div class="countdown-container">
+                    <div class="countdown-box">
+                        <span class="countdown-value" id="days">05</span>
+                        <span class="countdown-label">天</span>
+                    </div>
+                    <div class="countdown-box">
+                        <span class="countdown-value" id="hours">12</span>
+                        <span class="countdown-label">時</span>
+                    </div>
+                    <div class="countdown-box">
+                        <span class="countdown-value" id="minutes">45</span>
+                        <span class="countdown-label">分</span>
+                    </div>
+                    <div class="countdown-box">
+                        <span class="countdown-value" id="seconds">30</span>
+                        <span class="countdown-label">秒</span>
+                    </div>
+                </div>
+                <p style="font-size: 14px; margin: 20px 0 0; color: #8C6D46;">預購開啟時間: {{PREORDER_START_TIME}}</p>
+            </div>
+            
+            <!-- 产品亮点 -->
+            <div class="product-section">
+                <h2 class="section-title">尊享會員特權</h2>
+                <p class="product-intro">親愛的{{MEMBER_NAME}}，您作為{{BRAND_NAME}}{{MEMBER_TYPE}}，我們誠摯邀請您優先預購全新{{PRODUCT_NAME}}。{{PRODUCT_DESCRIPTION}}</p>
+                
+                <div class="highlight-grid">
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🌟</div>
+                        <h3 class="highlight-title">全球限量</h3>
+                        <p class="highlight-desc">僅對{{MEMBER_TYPE}}開放預購，全球限量發售</p>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🎁</div>
+                        <h3 class="highlight-title">專屬優惠</h3>
+                        <p class="highlight-desc">尊享<span style="font-weight: bold; color: #8c6d46;">{{DISCOUNT_RATE}}</span>獨家優惠</p>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🚚</div>
+                        <h3 class="highlight-title">優先發貨</h3>
+                        <p class="highlight-desc">比公眾提前{{EARLY_DELIVERY}}收到產品</p>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-icon">🎀</div>
+                        <h3 class="highlight-title">專屬包裝</h3>
+                        <p class="highlight-desc">專屬禮品包裝及定制賀卡服務</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 产品图库 -->
+            <div class="gallery-section">
+                <h2 class="section-title">產品展示</h2>
+                <div class="gallery-grid">
+                    <div class="gallery-item">
+                        <img src="https://s1.imagehub.cc/images/2025/06/16/dc0472537187030ae716558ba0f94e27.jpg" alt="典雅金色包裝">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://s1.imagehub.cc/images/2025/06/16/53d75b3bcf7530b54e5b02078f8a6948.jpg" alt="八種獨特風味">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://s1.imagehub.cc/images/2025/06/16/e273c2393f14c15d8f76d3552ed4b1b7.jpg" alt="手工精製工藝">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 行动呼吁按钮 -->
+            <div class="cta-section">
+                <h2 class="cta-title">{{CTA_TEXT}}</h2>
+                <p class="cta-text">作為{{BRAND_NAME}}{{MEMBER_TYPE}}，您可於{{PREORDER_PERIOD}}期間享受專屬預購權益</p>
+                <a href="{{CTA_URL}}" class="cta-button">{{CTA_BUTTON_TEXT}}</a>
+            </div>
+            
+            <!-- 页脚 -->
+            <div class="footer">
+                <div class="social-links">
+                    <a href="{{SOCIAL_LINKS}}" class="social-icon">f</a>
+                    <a href="{{SOCIAL_LINKS}}" class="social-icon">in</a>
+                    <a href="{{SOCIAL_LINKS}}" class="social-icon">t</a>
+                </div>
+                
+                <p class="footer-text">
+                    {{COMPANY_ADDRESS}}<br>
+                    客服郵箱: <a href="mailto:{{CONTACT_EMAIL}}" class="footer-link">{{CONTACT_EMAIL}}</a>
+                </p>
+                
+                <p class="footer-text">
+                    <a href="{{UNSUBSCRIBE_URL}}" class="footer-link">退訂郵件</a>
+                </p>
+                
+                <p class="footer-text">
+                    © 2025 {{BRAND_NAME}}. 保留所有權利。
+                </p>
+            </div>
+        </div>
+    </center>
+    
+    <script>
+        // 倒计时功能
+        function updateCountdown() {
+            const targetDate = new Date('{{PREORDER_START_DATE}}');
+            const now = new Date();
+            const difference = targetDate - now;
+            
+            if (difference > 0) {
+                const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+                
+                document.getElementById('days').textContent = days.toString().padStart(2, '0');
+                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+            } else {
+                document.getElementById('days').textContent = '00';
+                document.getElementById('hours').textContent = '00';
+                document.getElementById('minutes').textContent = '00';
+                document.getElementById('seconds').textContent = '00';
+            }
+        }
+        
+        // 初始化倒计时并设置每秒更新
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+</html>`
     },
     {
-      id: 'template4',
-      title: '客户关怀模板',
-      preview: '用于客户关怀的邮件模板，表达感谢并提供专属优惠。',
-      content: `📧 客户关怀邮件\n\n主题：感谢您一直以来的支持，{{收件人姓名}}！\n\n亲爱的 {{收件人姓名}}，\n\n💖 感谢您一直以来对我们的支持和信任。\n\n为了表达我们的感激之情，我们为您准备了专属优惠：\n• {{优惠详情}}\n• 有效期至：{{有效期}}\n\n[立即使用优惠码：{{优惠码}}]\n\n如果您有任何建议或问题，我们很乐意倾听。\n\n祝您生活愉快！\n\n{{公司名称}} 团队`,
-      thumbnail: '客户关怀缩略图'
+      id: 'template-d',
+      name: '客户关怀模板',
+      description: '用于客户关怀，表达感谢并提供专属优惠',
+      preview: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRkZGNUY1Ii8+Cjx0ZXh0IHg9IjEwIiB5PSIyMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMzc0MTUxIj7nlLXohJHlupTnlKjmiYvmnLogRDwvdGV4dD4KPHRleHQgeD0iMTAiIHk9IjQwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM2QjcyODAiPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD4KPHRleHQgeD0iMTAiIHk9IjYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5Q0EzQUYiPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD4KPC9zdmc+',
+      category: '关怀'
     },
     {
-      id: 'template5',
-      title: '节日祝福模板',
-      preview: '用于节日祝福的邮件模板，包含节日问候和特别优惠。',
-      content: `📧 节日祝福邮件\n\n主题：{{节日名称}} 快乐，{{收件人姓名}}！\n\n亲爱的 {{收件人姓名}}，\n\n🎊 在这个特别的 {{节日名称}}，我们向您致以最诚挚的祝福！\n\n为庆祝节日，我们准备了特别优惠：\n• 全场 {{折扣}}% 优惠\n• 限时礼品赠送\n\n🎁 活动详情：[活动链接]\n\n感谢您一直以来的支持，祝您节日快乐！\n\n{{公司名称}} 团队`,
-      thumbnail: '节日祝福缩略图'
+      id: 'template-e',
+      name: '节日祝福模板',
+      description: '用于节日祝福，包含节日问候和特别优惠',
+      preview: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRkZGNUY1Ii8+Cjx0ZXh0IHg9IjEwIiB5PSIyMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjMzc0MTUxIj7nlLXohJHlupTnlKjmiYvmnLogRTwvdGV4dD4KPHRleHQgeD0iMTAiIHk9IjQwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM2QjcyODAiPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD4KPHRleHQgeD0iMTAiIHk9IjYwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5Q0EzQUYiPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD4KPC9zdmc+',
+      category: '节日'
     }
-    ]
+  ];
+  
+  // 热门话题数据
+  const trendingTopics: TrendingTopic[] = [
+    { id: '1', text: 'AI人工智能', hashtag: '#AI人工智能', popularity: 95 },
+    { id: '2', text: '可持续发展', hashtag: '#可持续发展', popularity: 88 },
+    { id: '3', text: '数字化转型', hashtag: '#数字化转型', popularity: 85 },
+    { id: '4', text: '绿色能源', hashtag: '#绿色能源', popularity: 82 },
+    { id: '5', text: '智能家居', hashtag: '#智能家居', popularity: 80 },
+    { id: '6', text: '健康生活', hashtag: '#健康生活', popularity: 78 },
+    { id: '7', text: '科技创新', hashtag: '#科技创新', popularity: 75 },
+    { id: '8', text: '环保理念', hashtag: '#环保理念', popularity: 72 },
+    { id: '9', text: '数字营销', hashtag: '#数字营销', popularity: 70 },
+    { id: '10', text: '用户体验', hashtag: '#用户体验', popularity: 68 },
+    { id: '11', text: '区块链技术', hashtag: '#区块链技术', popularity: 65 },
+    { id: '12', text: '云计算服务', hashtag: '#云计算服务', popularity: 62 },
+    { id: '13', text: '移动支付', hashtag: '#移动支付', popularity: 60 },
+    { id: '14', text: '物联网应用', hashtag: '#物联网应用', popularity: 58 },
+    { id: '15', text: '数据分析', hashtag: '#数据分析', popularity: 55 }
+  ];
+  
   
   // 聊天历史状态
   const [chatHistory, setChatHistory] = useState<Array<{ 
@@ -124,7 +996,6 @@ const ContentCreationPage: React.FC = () => {
       selectedTheme: string,
       themes: Array<{
         id: number,
-        icon: string,
         title: string
       }>
     }
@@ -553,16 +1424,50 @@ Do you need to adjust any information?`,
     return createContentCardAtPosition(type, title, content, Math.random() * 400 + 100, Math.random() * 300 + 100);
   };
 
+  // 上传到平台占位处理
+  const handleUploadToPlatform = (platform: 'radica' | 'hubspot') => {
+    setUploadMenuOpenId(null);
+    if (!emailEditorContent && !generatedEmail) {
+      alert('请先生成邮件内容');
+      return;
+    }
+    const html = emailEditorContent || generatedEmail;
+    console.log(`准备上传到 ${platform}:`, html.substring(0, 120));
+    alert(`已触发上传到 ${platform} 的流程（示例）。可在此对接API。`);
+  };
+
+  // 下载HTML
+  const handleDownloadEmailHtml = () => {
+    setUploadMenuOpenId(null);
+    const html = emailEditorContent || generatedEmail;
+    if (!html) {
+      alert('暂无可下载的邮件内容，请先生成邮件');
+      return;
+    }
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'email-template.html';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // 在指定位置创建内容卡片
   const createContentCardAtPosition = (type: ContentCard['type'], title: string, content: string, x: number, y: number) => {
-    // 根据卡片类型和内容计算合适的高度
+    // 根据卡片类型和内容计算合适的尺寸
+    let cardWidth = 300; // 默认宽度
     let cardHeight = 150; // 默认高度
     
     if (type === 'content-pack') {
       // 内容包卡片设置更大的高度，确保内容能完整显示
       cardHeight = 600; // 增加高度以确保所有内容都能显示
-    } else if (type === 'email' || type === 'facebook' || type === 'instagram' || type === 'rednote' || type === 'blog' || type === 'landingpage') {
-      // 内容类型卡片也需要更多空间
+    } else if (type === 'email') {
+      // Email卡片需要更大的空间来显示所有功能
+      cardWidth = 450;
+      cardHeight = 600;
+    } else if (type === 'facebook' || type === 'instagram' || type === 'rednote' || type === 'blog' || type === 'landingpage') {
+      // 其他内容类型卡片也需要更多空间
       cardHeight = 250;
     }
     
@@ -573,17 +1478,22 @@ Do you need to adjust any information?`,
       content,
       x,
       y,
-      width: 300, // 增加宽度以更好地显示内容
+      width: cardWidth,
       height: cardHeight,
       zIndex: nextZIndex.current++
     };
     
     console.log('createContentCardAtPosition 被调用，创建卡片:', newCard); // 调试信息
+    console.log('卡片尺寸:', { width: newCard.width, height: newCard.height }); // 调试信息
+    
     setContentCards(prev => {
       const newCards = [...prev, newCard];
       console.log('更新内容卡片列表，新数量:', newCards.length); // 调试信息
+      console.log('所有卡片:', newCards.map(c => ({ id: c.id, type: c.type, title: c.title }))); // 调试信息
       return newCards;
     });
+    
+    console.log('createContentCardAtPosition 返回卡片:', newCard); // 调试信息
     return newCard;
   };
 
@@ -631,20 +1541,9 @@ Do you need to adjust any information?`,
       }
     };
 
-    // 对于email类型，使用选中的模板（如果有）
+    // 获取对应模板
     let template = contentTemplates[contentType as keyof typeof contentTemplates];
     let selectedTemplateId = null;
-    
-    if (contentType === 'email' && selectedEmailTemplate) {
-      const emailTemplate = emailTemplates.find(t => t.id === selectedEmailTemplate);
-      if (emailTemplate) {
-        template = {
-          title: 'Email 内容 - ' + emailTemplate.title,
-          content: emailTemplate.content
-        };
-        selectedTemplateId = selectedEmailTemplate;
-      }
-    }
     
     if (template) {
       console.log('使用模板创建内容卡片:', template); // 调试信息
@@ -680,7 +1579,7 @@ Do you need to adjust any information?`,
       
       // 添加选中的模板信息
       if (selectedTemplateId) {
-        newCard.selectedTemplate = selectedTemplateId;
+        // newCard.selectedTemplate = selectedTemplateId; // 注释掉，因为ContentCard接口中没有这个属性
       }
       
       console.log('新创建的内容卡片:', newCard); // 调试信息
@@ -688,35 +1587,193 @@ Do you need to adjust any information?`,
       setShowCreateContentMenu(false);
       
       // 清除选中的模板状态
-      setSelectedEmailTemplate(null);
+      // setSelectedEmailTemplate(null); // 注释掉，因为不存在这个函数
     } else {
       console.log('未找到对应模板:', contentType); // 调试信息
     }
   };
 
+
   // 处理邮件模板选择
-  const handleTemplateSelect = (templateId: string) => {
-    setSelectedEmailTemplate(templateId);
+  const handleTemplateSelect = (template: EmailTemplate) => {
+    setSelectedTemplate(template);
   };
 
-  // 处理邮件模板预览
-  const handleTemplatePreview = (template: EmailTemplate) => {
-    setPreviewTemplate(template);
-    setShowTemplatePreview(true);
+  // 处理邮件长度选择
+  const handleLengthSelect = (length: EmailLength) => {
+    setSelectedLength(length);
   };
 
-  // 处理删除已选模板
-  const handleRemoveSelectedTemplate = () => {
-    setSelectedEmailTemplate(null);
+  // 处理CTA设置更新
+  const handleCtaUpdate = (field: keyof CTASettings, value: string) => {
+    setCtaSettings(prev => ({ ...prev, [field]: value }));
   };
 
-  // 关闭模板预览弹窗
-  const closeTemplatePreview = () => {
-    setShowTemplatePreview(false);
-    setPreviewTemplate(null);
+  // 处理热门话题选择
+  const handleTopicSelect = (topic: TrendingTopic) => {
+    setSelectedTopics(prev => {
+      const isSelected = prev.some(t => t.id === topic.id);
+      if (isSelected) {
+        return prev.filter(t => t.id !== topic.id);
+      } else {
+        return [...prev, topic];
+      }
+    });
   };
 
-  // 处理按钮点击
+  // 调整卡片大小
+  const resizeCard = (cardId: string, newWidth: number, newHeight: number) => {
+    setContentCards(prev => prev.map(card => 
+      card.id === cardId 
+        ? { ...card, width: newWidth, height: newHeight }
+        : card
+    ));
+  };
+
+  // 自动调整Email卡片大小
+  const autoResizeEmailCard = (cardId: string) => {
+    // 根据内容动态调整Email卡片大小
+    const baseWidth = 400;
+    const baseHeight = 500;
+    
+    // 如果有生成的内容，增加高度
+    const extraHeight = generatedEmail ? 200 : 0;
+    
+    resizeCard(cardId, baseWidth, baseHeight + extraHeight);
+  };
+  // 预览HTML邮件
+  const handlePreviewHtml = () => {
+    if (!selectedTemplate || !selectedTemplate.htmlContent) {
+      alert('请先选择一个包含HTML内容的邮件模板');
+      return;
+    }
+
+    let htmlContent = selectedTemplate.htmlContent;
+    
+    // 替换模板中的动态内容
+    const lengthText = selectedLength === 'short' ? '简短' : selectedLength === 'medium' ? '中等' : '详细';
+    const topicsText = selectedTopics.map(t => t.hashtag).join(' ');
+    
+    htmlContent = htmlContent.replace('{{CTA_TEXT}}', ctaSettings.text);
+    htmlContent = htmlContent.replace('{{CTA_URL}}', ctaSettings.url || '#');
+    htmlContent = htmlContent.replace('{{TOPICS}}', topicsText || '');
+    htmlContent = htmlContent.replace('{{LENGTH}}', lengthText);
+    
+      // 模板特有的变量替换
+      if (selectedTemplate.id === 'template-a') {
+        // 模板A (Godiva营销推广模板) 的变量替换
+        htmlContent = htmlContent.replace('{{MemberName}}', '張先生');
+        htmlContent = htmlContent.replace('{{SocialLinks}}', '#');
+        htmlContent = htmlContent.replace('{{CompanyAddress}}', '香港中環皇后大道中99號中環中心');
+        htmlContent = htmlContent.replace('{{ContactEmail}}', 'service@godiva.com.hk');
+        htmlContent = htmlContent.replace('{{UnsubscribeURL}}', '#');
+      } else if (selectedTemplate.id === 'template-b') {
+      htmlContent = htmlContent.replace('{{BRAND_NAME}}', 'Starbucks');
+      htmlContent = htmlContent.replace('{{PRODUCT_NAME}}', 'Blackberry Sage Refreshers');
+      htmlContent = htmlContent.replace('{{PRODUCT_DESCRIPTION}}', 'Sweet blackberries and notes of sage come together in perfect harmony to create this craveable, first-ever winter Refresher. Add lemonade for a tart twist, or coconutmilk for a richer experience.');
+      htmlContent = htmlContent.replace('{{RECIPIENT_EMAIL}}', 'customer@example.com');
+    } else if (selectedTemplate.id === 'template-c') {
+      // 模板C (Godiva会员尊享模板) 的变量替换
+      htmlContent = htmlContent.replace('{{BRAND_NAME}}', 'Godiva');
+      htmlContent = htmlContent.replace('{{PRODUCT_NAME}}', '2025方形朱古力系列');
+      htmlContent = htmlContent.replace('{{MEMBER_TYPE}}', '高級會員');
+      htmlContent = htmlContent.replace('{{MEMBER_NAME}}', '張先生');
+      htmlContent = htmlContent.replace('{{PRODUCT_DESCRIPTION}}', '這款限量新品融合了東西方風味靈感，採用最優質的可可豆精製而成，每一口都是奢華的味覺盛宴。');
+      htmlContent = htmlContent.replace('{{DISCOUNT_RATE}}', '9.5折');
+      htmlContent = htmlContent.replace('{{EARLY_DELIVERY}}', '一週');
+      htmlContent = htmlContent.replace('{{PREORDER_START_TIME}}', '2025年6月5日 上午10:00');
+      htmlContent = htmlContent.replace('{{PREORDER_START_DATE}}', '2025-06-05T10:00:00');
+      htmlContent = htmlContent.replace('{{PREORDER_PERIOD}}', '2025年6月5日至6月12日');
+      htmlContent = htmlContent.replace('{{CTA_BUTTON_TEXT}}', '尊享預購優惠');
+      htmlContent = htmlContent.replace('{{SOCIAL_LINKS}}', '#');
+      htmlContent = htmlContent.replace('{{COMPANY_ADDRESS}}', '香港中環皇后大道中99號中環中心');
+      htmlContent = htmlContent.replace('{{CONTACT_EMAIL}}', 'service@godiva.com.hk');
+      htmlContent = htmlContent.replace('{{UNSUBSCRIBE_URL}}', '#');
+    }
+    
+    setHtmlPreviewContent(htmlContent);
+    setShowHtmlPreview(true);
+  };
+
+  const handleGenerateEmail = () => {
+    if (!selectedTemplate) {
+      alert('请先选择一个邮件模板');
+      return;
+    }
+
+    const lengthText = selectedLength === 'short' ? '简短' : selectedLength === 'medium' ? '中等' : '详细';
+    const topicsText = selectedTopics.map(t => t.hashtag).join(' ');
+    
+    // 如果有HTML内容，使用HTML模板
+    if (selectedTemplate.htmlContent) {
+      let htmlContent = selectedTemplate.htmlContent;
+      
+      // 替换模板中的动态内容
+      htmlContent = htmlContent.replace('{{CTA_TEXT}}', ctaSettings.text);
+      htmlContent = htmlContent.replace('{{CTA_URL}}', ctaSettings.url || '#');
+      htmlContent = htmlContent.replace('{{TOPICS}}', topicsText || '');
+      htmlContent = htmlContent.replace('{{LENGTH}}', lengthText);
+      
+      // 模板特有的变量替换
+      if (selectedTemplate.id === 'template-a') {
+        // 模板A (Godiva营销推广模板) 的变量替换
+        htmlContent = htmlContent.replace('{{MemberName}}', '張先生');
+        htmlContent = htmlContent.replace('{{SocialLinks}}', '#');
+        htmlContent = htmlContent.replace('{{CompanyAddress}}', '香港中環皇后大道中99號中環中心');
+        htmlContent = htmlContent.replace('{{ContactEmail}}', 'service@godiva.com.hk');
+        htmlContent = htmlContent.replace('{{UnsubscribeURL}}', '#');
+      } else if (selectedTemplate.id === 'template-b') {
+        htmlContent = htmlContent.replace('{{BRAND_NAME}}', 'Starbucks');
+        htmlContent = htmlContent.replace('{{PRODUCT_NAME}}', 'Blackberry Sage Refreshers');
+        htmlContent = htmlContent.replace('{{PRODUCT_DESCRIPTION}}', 'Sweet blackberries and notes of sage come together in perfect harmony to create this craveable, first-ever winter Refresher. Add lemonade for a tart twist, or coconutmilk for a richer experience.');
+        htmlContent = htmlContent.replace('{{RECIPIENT_EMAIL}}', 'customer@example.com');
+      } else if (selectedTemplate.id === 'template-c') {
+        // 模板C (Godiva会员尊享模板) 的变量替换
+        htmlContent = htmlContent.replace('{{BRAND_NAME}}', 'Godiva');
+        htmlContent = htmlContent.replace('{{PRODUCT_NAME}}', '2025方形朱古力系列');
+        htmlContent = htmlContent.replace('{{MEMBER_TYPE}}', '高級會員');
+        htmlContent = htmlContent.replace('{{MEMBER_NAME}}', '張先生');
+        htmlContent = htmlContent.replace('{{PRODUCT_DESCRIPTION}}', '這款限量新品融合了東西方風味靈感，採用最優質的可可豆精製而成，每一口都是奢華的味覺盛宴。');
+        htmlContent = htmlContent.replace('{{DISCOUNT_RATE}}', '9.5折');
+        htmlContent = htmlContent.replace('{{EARLY_DELIVERY}}', '一週');
+        htmlContent = htmlContent.replace('{{PREORDER_START_TIME}}', '2025年6月5日 上午10:00');
+        htmlContent = htmlContent.replace('{{PREORDER_START_DATE}}', '2025-06-05T10:00:00');
+        htmlContent = htmlContent.replace('{{PREORDER_PERIOD}}', '2025年6月5日至6月12日');
+        htmlContent = htmlContent.replace('{{CTA_BUTTON_TEXT}}', '尊享預購優惠');
+        htmlContent = htmlContent.replace('{{SOCIAL_LINKS}}', '#');
+        htmlContent = htmlContent.replace('{{COMPANY_ADDRESS}}', '香港中環皇后大道中99號中環中心');
+        htmlContent = htmlContent.replace('{{CONTACT_EMAIL}}', 'service@godiva.com.hk');
+        htmlContent = htmlContent.replace('{{UNSUBSCRIBE_URL}}', '#');
+      }
+      
+      // 设置邮件编辑器内容并打开弹窗
+      setEmailEditorContent(htmlContent);
+      setShowEmailEditor(true);
+    } else {
+      // 使用默认的文本模板
+      const emailContent = `📧 ${selectedTemplate.name}
+
+📝 邮件长度：${lengthText}
+🎯 CTA行动号召：${ctaSettings.text}
+🔗 链接：${ctaSettings.url || '未设置'}
+🏷️ 热门话题：${topicsText || '未选择'}
+
+📄 邮件内容预览：
+基于${selectedTemplate.name}生成的内容将在这里显示...
+
+${selectedTemplate.description}
+
+[生成时间：${new Date().toLocaleString()}]`;
+
+      setGeneratedEmail(emailContent);
+    }
+    
+    // 自动调整Email卡片大小
+    const emailCard = contentCards.find(card => card.type === 'email');
+    if (emailCard) {
+      autoResizeEmailCard(emailCard.id);
+    }
+  };
   const handleButtonClick = (buttonText: string, action: string) => {
     console.log('按钮点击:', buttonText, action); // 调试信息
     
@@ -882,7 +1939,8 @@ Do you need to adjust any information?`,
   // 处理拖拽结束
   const handleDragEnd = () => {
     setIsDragging(false);
-    setSelectedCard(null);
+    // 不要取消选中卡片，保持选中状态
+    // setSelectedCard(null);
   };
 
   // 聊天对话框拖拽处理
@@ -1255,8 +2313,18 @@ Do you need to adjust any information?`,
           backgroundSize: '20px 20px',
           height: projectSettings ? 'calc(100vh - 7rem)' : 'calc(100vh - 4rem)' // 如果有项目设置信息，增加高度
         }}
+        onClick={(e) => {
+          // 如果点击的是画布本身（不是卡片），取消选中
+          if (e.target === e.currentTarget) {
+            setSelectedCard(null);
+          }
+        }}
       >
         {/* 内容卡片 */}
+        {(() => {
+          console.log('开始渲染内容卡片，总数:', contentCards.length);
+          return null;
+        })()}
         {contentCards.map((card) => {
           console.log('渲染单个卡片:', card.id, '类型:', card.type, '位置:', { x: card.x, y: card.y });
           return (
@@ -1295,6 +2363,52 @@ Do you need to adjust any information?`,
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                   </button>
+                )}
+                {card.type === 'email' && (
+                  <>
+                    <button
+                      onClick={() => autoResizeEmailCard(card.id)}
+                      className="p-1 hover:bg-blue-100 rounded transition-colors"
+                      title="自动调整大小"
+                    >
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l-5 5m21-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
+                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => setUploadMenuOpenId(card.id)}
+                        className="p-1 hover:bg-green-100 rounded transition-colors"
+                        title="上传至平台"
+                      >
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
+                        </svg>
+                      </button>
+                      {uploadMenuOpenId === card.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-lg z-10">
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                            onClick={() => handleUploadToPlatform('radica')}
+                          >
+                            上传到 Radica
+                          </button>
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                            onClick={() => handleUploadToPlatform('hubspot')}
+                          >
+                            上传到 HubSpot
+                          </button>
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                            onClick={handleDownloadEmailHtml}
+                          >
+                            下载 HTML
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
                 <button
                   onClick={() => setSelectedCard(card.id)}
@@ -1370,56 +2484,140 @@ Do you need to adjust any information?`,
                   </div>
                 </div>
               ) : card.type === 'email' ? (
-                <div className="p-3 h-full flex flex-col">
-                  <h4 className="text-xs font-medium text-gray-500 mb-2">选择邮件模板</h4>
-                  
-                  {/* 模板水平滚动容器 - 卡片式 */}
-                  <div className="relative mb-3 overflow-x-auto pb-2 flex-grow">
+                <div className="p-3 h-full overflow-y-auto" style={{ maxHeight: 'calc(100% - 60px)' }}>
+                  {/* 邮件模板选择 */}
+                  <div className="mb-3">
+                    <h4 className="text-xs font-medium text-gray-600 mb-2">📧 选择邮件模板</h4>
+                    <div className="overflow-x-auto pb-2 hide-scrollbar">
                     <div className="flex space-x-2 min-w-max">
-                      {emailTemplates.map(template => {
-                        const isSelected = selectedEmailTemplate === template.id;
-                        return (
+                        {emailTemplates.map(template => (
                           <div 
                             key={template.id}
-                            className={`relative w-40 h-24 rounded-lg border cursor-pointer transition-all overflow-hidden flex-shrink-0 ${isSelected ? 'border-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
-                            onClick={() => handleTemplateSelect(template.id)}
+                            onClick={() => handleTemplateSelect(template)}
+                            className={`flex-shrink-0 w-28 h-16 rounded-lg border-2 cursor-pointer transition-all relative ${
+                              selectedTemplate?.id === template.id
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-blue-300'
+                            }`}
                           >
-                            <div className="p-2 h-full flex flex-col">
-                              <div className="text-sm font-medium mb-1 truncate">{template.title}</div>
-                              <div className="text-xs text-gray-500 truncate flex-grow">{template.preview.substring(0, 40)}...</div>
-                              
-                              {/* 选中时的标记 */}
-                              {isSelected && (
-                                <div className="absolute top-0 right-0 w-5 h-5 bg-blue-500 rounded-bl-lg flex items-center justify-center">
-                                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            <div className="p-2 h-full flex flex-col justify-between">
+                              <div className="text-xs font-medium text-gray-700 line-clamp-1">{template.name}</div>
+                              <div className="text-xs text-gray-500 truncate">{template.category}</div>
+                              {selectedTemplate?.id === template.id && (
+                                <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                   </svg>
                                 </div>
                               )}
                             </div>
                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 邮件长度选择 */}
+                  <div className="mb-3">
+                    <h4 className="text-xs font-medium text-gray-600 mb-2">📏 邮件长度</h4>
+                    <div className="flex space-x-1">
+                      {(['short', 'medium', 'long'] as EmailLength[]).map(length => (
+                        <button
+                          key={length}
+                          onClick={() => handleLengthSelect(length)}
+                          className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                            selectedLength === length
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {length === 'short' ? '短' : length === 'medium' ? '中' : '长'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* CTA设置 */}
+                  <div className="mb-3">
+                    <h4 className="text-xs font-medium text-gray-600 mb-2">🎯 CTA行动号召</h4>
+                    <div className="space-y-1.5">
+                      <input
+                        type="text"
+                        value={ctaSettings.text}
+                        onChange={(e) => handleCtaUpdate('text', e.target.value)}
+                        placeholder="CTA按钮文字"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                      <input
+                        type="text"
+                        value={ctaSettings.url}
+                        onChange={(e) => handleCtaUpdate('url', e.target.value)}
+                        placeholder="跳转链接"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 热门话题选择 */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-xs font-medium text-gray-600">🔥 热门话题</h4>
+                      <button
+                        onClick={() => setShowTopicsModal(true)}
+                        className="text-xs text-blue-500 hover:text-blue-700"
+                      >
+                        更多
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {trendingTopics.slice(0, 8).map(topic => {
+                        const isSelected = selectedTopics.some(t => t.id === topic.id);
+                        return (
+                          <button
+                            key={topic.id}
+                            onClick={() => handleTopicSelect(topic)}
+                            className={`px-2 py-1 text-xs rounded-full transition-all ${
+                              isSelected
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {topic.hashtag}
+                          </button>
                         );
                       })}
                     </div>
                   </div>
                   
-                  {/* 已选模板显示 */}
-                  {selectedEmailTemplate && (
-                    <div className="bg-blue-50 rounded p-2 flex items-center justify-between">
-                      <div className="flex items-center">
-                        <svg className="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="text-xs text-gray-700">
-                          已选择: {emailTemplates.find(t => t.id === selectedEmailTemplate)?.title}
-                        </span>
-                      </div>
+                  {/* 生成按钮 */}
+                  <div className="flex space-x-2 mb-3">
                       <button
-                        className="text-xs text-red-500 hover:text-red-700"
-                        onClick={handleRemoveSelectedTemplate}
+                      onClick={handleGenerateEmail}
+                      className="flex-1 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium text-sm hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm"
                       >
-                        删除
+                      ✨ 生成邮件
                       </button>
+                    {selectedTemplate?.htmlContent && (
+                      <button
+                        onClick={handlePreviewHtml}
+                        className="px-3 py-2 bg-green-500 text-white rounded-lg font-medium text-sm hover:bg-green-600 transition-all shadow-sm"
+                      >
+                        👁️ 预览
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 生成的邮件内容 */}
+                  {generatedEmail && (
+                    <div className="p-2 bg-gray-50 rounded-lg border border-gray-200">
+                      <h4 className="text-xs font-medium text-gray-600 mb-2">📄 生成内容</h4>
+                      <div className="max-h-[60vh] overflow-y-auto border border-gray-300 rounded">
+                        <iframe
+                          srcDoc={generatedEmail}
+                          className="w-full h-[60vh] border-0"
+                          title="邮件预览"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1471,75 +2669,6 @@ Do you need to adjust any information?`,
           >
             <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('createContent')}</h3>
             
-            {/* 邮件模板选择区域 */}
-            <div className="mb-4">
-              <h4 className="text-xs font-medium text-gray-500 mb-2">选择邮件模板</h4>
-              
-              {/* 模板水平滚动容器 */}
-              <div className="relative mb-3">
-                <div className="overflow-x-auto pb-2 hide-scrollbar">
-                  <div className="flex space-x-2 min-w-max">
-                    {emailTemplates.map(template => {
-                      const isSelected = selectedEmailTemplate === template.id;
-                      return (
-                        <div 
-                          key={template.id}
-                          className={`relative w-24 h-16 rounded border cursor-pointer transition-all overflow-hidden ${
-                            isSelected ? 'border-blue-500' : 'border-gray-200 hover:border-blue-300'
-                          }`}
-                          onClick={() => handleTemplateSelect(template.id)}
-                        >
-                          <div className="p-2">
-                            <div className="text-xs font-medium truncate mb-1">{template.title}</div>
-                            <div className="text-xs text-gray-500 truncate">{template.preview.substring(0, 20)}...</div>
-                          </div>
-                          
-                          {/* 选中时的蒙版和对勾 */}
-                          {isSelected && (
-                            <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center">
-                              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          )}
-                          
-                          {/* 预览按钮 */}
-                          <button
-                            className="absolute bottom-1 right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs text-gray-600"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTemplatePreview(template);
-                            }}
-                          >
-                            👁️
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              
-              {/* 已选模板显示 */}
-              {selectedEmailTemplate && (
-                <div className="bg-blue-50 rounded p-2 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-xs text-gray-700">
-                      已选择: {emailTemplates.find(t => t.id === selectedEmailTemplate)?.title}
-                    </span>
-                  </div>
-                  <button
-                    className="text-xs text-red-500 hover:text-red-700"
-                    onClick={handleRemoveSelectedTemplate}
-                  >
-                    删除
-                  </button>
-                </div>
-              )}
-            </div>
             
             <div className="space-y-2">
               <button
@@ -1605,15 +2734,16 @@ Do you need to adjust any information?`,
           </div>
         )}
 
-        {/* 邮件模板预览弹窗 */}
-        {showTemplatePreview && previewTemplate && (
+
+        {/* HTML邮件预览弹窗 */}
+        {showHtmlPreview && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4 w-full">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">邮件模板预览</h3>
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">📧 HTML邮件预览</h3>
                 <button
+                  onClick={() => setShowHtmlPreview(false)}
                   className="text-gray-500 hover:text-gray-700"
-                  onClick={closeTemplatePreview}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1621,27 +2751,162 @@ Do you need to adjust any information?`,
                 </button>
               </div>
               
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">{previewTemplate.title}</h4>
-                <p className="text-sm text-gray-500 mb-3">{previewTemplate.preview}</p>
-                
-                <div className="bg-gray-50 rounded p-4 border border-gray-100">
-                  <h5 className="text-xs font-medium text-gray-500 mb-2">模板内容预览：</h5>
-                  <pre className="text-xs text-gray-700 whitespace-pre-wrap max-h-60 overflow-y-auto">
-                    {previewTemplate.content}
-                  </pre>
+              <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+                <iframe
+                  srcDoc={htmlPreviewContent}
+                  className="w-full h-[600px] border border-gray-200 rounded"
+                  title="HTML邮件预览"
+                />
+              </div>
+              
+              <div className="p-4 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={() => setShowHtmlPreview(false)}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  关闭
+                </button>
+                </div>
+              </div>
+          </div>
+        )}
+
+        {/* 邮件编辑器弹窗 */}
+        {showEmailEditor && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[95vh] overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">📧 邮件编辑器</h3>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      // 复制邮件内容到剪贴板
+                      navigator.clipboard.writeText(emailEditorContent);
+                      alert('邮件内容已复制到剪贴板');
+                    }}
+                    className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                  >
+                    📋 复制
+                  </button>
+                  <button
+                    onClick={() => setShowEmailEditor(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
               
-              <div className="flex justify-end">
+              <div className="flex h-[calc(95vh-80px)]">
+                {/* 左侧：HTML源码编辑器 */}
+                <div className="w-1/2 border-r border-gray-200 flex flex-col">
+                  <div className="p-3 border-b border-gray-200 bg-gray-50">
+                    <h4 className="text-sm font-medium text-gray-700">HTML 源码</h4>
+                  </div>
+                  <div className="flex-1 p-4">
+                    <textarea
+                      value={emailEditorContent}
+                      onChange={(e) => setEmailEditorContent(e.target.value)}
+                      className="w-full h-full resize-none border border-gray-300 rounded p-3 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      placeholder="邮件HTML内容..."
+                    />
+                  </div>
+                </div>
+                
+                {/* 右侧：邮件预览 */}
+                <div className="w-1/2 flex flex-col">
+                  <div className="p-3 border-b border-gray-200 bg-gray-50">
+                    <h4 className="text-sm font-medium text-gray-700">邮件预览</h4>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    <iframe
+                      srcDoc={emailEditorContent}
+                      className="w-full h-full border-0"
+                      title="邮件预览"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 border-t border-gray-200 flex justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">字符数: {emailEditorContent.length}</span>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      // 保存邮件内容
+                      const blob = new Blob([emailEditorContent], { type: 'text/html' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'email-template.html';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    💾 保存
+                  </button>
+                  <button
+                    onClick={() => setShowEmailEditor(false)}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    关闭
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 热门话题弹窗 */}
+        {showTopicsModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">🔥 所有热门话题</h3>
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                  onClick={() => {
-                    handleTemplateSelect(previewTemplate.id);
-                    closeTemplatePreview();
-                  }}
+                  onClick={() => setShowTopicsModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
                 >
-                  选择此模板
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                {trendingTopics.map(topic => {
+                  const isSelected = selectedTopics.some(t => t.id === topic.id);
+                  return (
+                    <button
+                      key={topic.id}
+                      onClick={() => handleTopicSelect(topic)}
+                      className={`px-3 py-2 rounded-full transition-all flex items-center space-x-2 ${
+                        isSelected
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <span className="text-sm">{topic.hashtag}</span>
+                      <span className="text-xs opacity-75">({topic.popularity})</span>
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  已选择 {selectedTopics.length} 个话题
+                </div>
+                <button
+                  onClick={() => setShowTopicsModal(false)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  确定
                 </button>
               </div>
             </div>
@@ -1974,22 +3239,18 @@ Do you need to adjust any information?`,
                                     themes: [
                                       {
                                         id: 1,
-                                        icon: '✨',
                                         title: '一口入魂,五重奏響| GODIVA 立方巧克力禮盒,限時預售中!'
                                       },
                                       {
                                         id: 2,
-                                        icon: '🎁',
                                         title: '方寸之間,藏盡甜蜜 | GODIVA 匠心立方禮盒,驚喜預售開啟!'
                                       },
                                       {
                                         id: 3,
-                                        icon: '☀️',
                                         title: '解鎖立方,邂逅5種摯愛| GODIVA 限定巧克力禮盒,預售搶先訂!'
                                       },
                                       {
                                         id: 4,
-                                        icon: '💎',
                                         title: '一口驚豔,五層奢享| GODIVA 立方巧克力藝術禮盒,預售盛啟!'
                                       }
                                     ]
@@ -2030,36 +3291,23 @@ Do you need to adjust any information?`,
                             }}
                           >
                             <div className="flex items-center">
-                              <span className="text-lg mr-3">{theme.icon}</span>
+                              <input
+                                type="radio"
+                                name="theme-selection"
+                                checked={message.themeSelectionForm?.selectedTheme === theme.id.toString()}
+                                onChange={() => {
+                                  const newHistory = [...chatHistory];
+                                  const messageIndex = chatHistory.findIndex(msg => msg === message);
+                                  if (messageIndex !== -1 && newHistory[messageIndex].themeSelectionForm) {
+                                    newHistory[messageIndex].themeSelectionForm!.selectedTheme = theme.id.toString();
+                                    setChatHistory(newHistory);
+                                  }
+                                }}
+                                className="mr-3"
+                              />
                               <div className="flex-1">
-                                <input
-                                  type="text"
-                                  value={theme.title}
-                                  onChange={(e) => {
-                                    e.stopPropagation(); // 阻止点击事件冒泡
-                                    const newHistory = [...chatHistory];
-                                    const messageIndex = chatHistory.findIndex(msg => msg === message);
-                                    if (messageIndex !== -1 && newHistory[messageIndex].themeSelectionForm) {
-                                      const newThemes = [...newHistory[messageIndex].themeSelectionForm!.themes];
-                                      const themeIndex = newThemes.findIndex(t => t.id === theme.id);
-                                      if (themeIndex !== -1) {
-                                        newThemes[themeIndex].title = e.target.value;
-                                        newHistory[messageIndex].themeSelectionForm!.themes = newThemes;
-                                        setChatHistory(newHistory);
-                                      }
-                                    }
-                                  }}
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                />
+                                <span className="text-sm text-gray-700">{theme.title}</span>
                               </div>
-                              <button 
-                                className="ml-2 p-1 hover:bg-gray-100 rounded"
-                                onClick={(e) => e.stopPropagation()} // 阻止点击事件冒泡
-                              >
-                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
                             </div>
                           </div>
                         ))}
@@ -2067,9 +3315,6 @@ Do you need to adjust any information?`,
 
                       <div className="mt-4 pt-3 border-t border-gray-200 flex space-x-3">
                         <button className="flex-1 px-4 py-2 border border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors text-sm font-medium flex items-center justify-center">
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
                           重新生成
                         </button>
                         <button 
@@ -2097,11 +3342,13 @@ Do you need to adjust any information?`,
                               console.log('卡片类型:', contentPackCard.type); // 调试信息
                               console.log('卡片位置:', { x: contentPackCard.x, y: contentPackCard.y }); // 调试信息
                               
+                              // 立即选中新创建的卡片
                               setSelectedCard(contentPackCard.id);
                               
                               // 使用 setTimeout 确保状态更新后再检查
                               setTimeout(() => {
                                 console.log('延迟检查：当前内容卡片数量:', contentCards.length); // 调试信息
+                                console.log('延迟检查：选中的卡片ID:', selectedCard); // 调试信息
                               }, 100);
                             } else {
                               console.log('没有选择主题，无法创建内容包卡片'); // 调试信息

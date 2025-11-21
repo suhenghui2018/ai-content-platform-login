@@ -17,8 +17,7 @@ const AppNavigationPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   
   // 当前选中的分类
-  const [selectedCategory, setSelectedCategory] = useState('Social Media Marketing');
-  
+  const [selectedCategory, setSelectedCategory] = useState('All');
   // 排序方式
   const [sortBy, setSortBy] = useState('Recommend');
 
@@ -95,6 +94,14 @@ const AppNavigationPage: React.FC = () => {
       icon: '🚀',
       tags: ['Business'],
       category: 'Product Marketing'
+    },
+    {
+      id: 'ab-test',
+      title: 'A/B Test',
+      description: 'Create and analyze A/B tests to optimize your marketing campaigns and content',
+      icon: '🧪',
+      tags: ['NEW'],
+      category: '工具APP'
     }
   ];
 
@@ -108,7 +115,8 @@ const AppNavigationPage: React.FC = () => {
     'Field Marketing',
     'Lifecycle Marketing',
     'Partner Marketing',
-    'PR & Comms'
+    'PR & Comms',
+    '工具APP'
   ];
 
   // 排序选项
@@ -136,19 +144,19 @@ const AppNavigationPage: React.FC = () => {
     }
   });
 
-  // 获取标签样式
+  // 获取标签样式 - 简约风格
   const getTagStyle = (tag: string) => {
     switch (tag) {
       case 'POPULAR':
-        return 'bg-pink-100 text-pink-800';
+        return 'bg-pink-50 text-pink-700 border border-pink-200';
       case 'NEW':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-50 text-green-700 border border-green-200';
       case 'UPGRADE':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-50 text-blue-700 border border-blue-200';
       case 'Business':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-orange-50 text-orange-700 border border-orange-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-50 text-gray-700 border border-gray-200';
     }
   };
 
@@ -163,7 +171,8 @@ const AppNavigationPage: React.FC = () => {
       'Field Marketing': 'Connect with your local audience through field marketing and events.',
       'Lifecycle Marketing': 'Engage customers throughout their entire journey with personalized marketing.',
       'Partner Marketing': 'Leverage partnerships to expand your reach and grow your business.',
-      'PR & Comms': 'Manage your public relations and communications with professional tools.'
+      'PR & Comms': 'Manage your public relations and communications with professional tools.',
+      '工具APP': '提供各类营销工具，帮助您优化营销策略和提升营销效果。'
     };
     return descriptions[category] || 'Discover powerful marketing tools for your business.';
   };
@@ -176,155 +185,152 @@ const AppNavigationPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 顶部导航栏 */}
+      {/* 顶部导航栏 - 参考菜单栏简约风格 */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="px-8 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/dashboard?menu=home')}
+                className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200"
+                aria-label="返回"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <h1 className="text-xl font-semibold text-gray-900">Apps</h1>
+            </div>
+          </div>
+
+          {/* 搜索和筛选栏 - 简约风格 */}
+          <div className="flex items-center space-x-3">
             {/* 搜索栏 */}
-            <div className="flex-1 max-w-lg">
+            <div className="flex-1 max-w-md">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
                 <input
                   type="text"
-                  placeholder="Q Search..."
+                  placeholder="Search apps..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
                 />
               </div>
             </div>
 
-            {/* 分类选择 */}
-            <div className="ml-6">
+            {/* 分类和排序选择 */}
+            <div className="flex items-center space-x-2">
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
                 <option value="All">All Categories</option>
                 {categories.map((category) => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
-            </div>
 
-            {/* 返回按钮 */}
-            <div className="ml-6">
-              <button
-                onClick={() => navigate('/')}
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
-                ← Back to Home
-              </button>
+                {sortOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
       </div>
 
       {/* 主要内容区域 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 分类标题和描述 */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-pink-50 to-pink-100 rounded-lg p-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-              <svg className="w-full h-full text-pink-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <div className="relative">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                {selectedCategory}
-              </h1>
-              <p className="text-lg text-gray-700 max-w-3xl">
-                {getCategoryDescription(selectedCategory)}
-              </p>
-            </div>
-          </div>
+      <div className="px-8 py-6">
+        {/* 结果统计 - 简化 */}
+        <div className="mb-4">
+          <span className="text-sm text-gray-500">
+            {sortedApps.length} {sortedApps.length === 1 ? 'app' : 'apps'}
+          </span>
         </div>
 
-        {/* 排序和结果统计 */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">
-              {sortedApps.length} apps found
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Sort by:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {sortOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* 应用网格 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* 应用列表 - 简约列表式设计，参考菜单栏风格 */}
+        <div className="space-y-1">
           {sortedApps.map((app) => (
-            <div
+            <button
               key={app.id}
               onClick={() => handleAppClick(app.id)}
-              className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer group"
+              className="w-full bg-white rounded-lg border border-gray-200 p-4 text-left hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="text-3xl">{app.icon}</div>
-                <div className="flex flex-wrap gap-2">
-                  {app.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${getTagStyle(tag)}`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
+              <div className="flex items-center space-x-4">
+                {/* 图标 */}
+                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center text-2xl">
+                  {app.icon}
+                </div>
+                
+                {/* 内容 */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {app.title}
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5 ml-2">
+                      {app.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className={`px-2 py-0.5 text-xs font-medium rounded ${getTagStyle(tag)}`}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 line-clamp-1">
+                    {app.description}
+                  </p>
+                </div>
+                
+                {/* 箭头图标 */}
+                <div className="flex-shrink-0">
+                  <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
               </div>
-              
-              <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                {app.title}
-              </h3>
-              
-              <p className="text-gray-600 text-sm leading-relaxed">
-                {app.description}
-              </p>
-            </div>
+            </button>
           ))}
         </div>
 
-        {/* 空状态 */}
+        {/* 空状态 - 简约风格 */}
         {sortedApps.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">🔍</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No apps found</h3>
-            <p className="text-gray-600">
+            <div className="text-gray-300 text-4xl mb-3">🔍</div>
+            <h3 className="text-sm font-medium text-gray-900 mb-1">No apps found</h3>
+            <p className="text-sm text-gray-600">
               Try adjusting your search terms or selecting a different category.
             </p>
           </div>
         )}
 
-        {/* 底部提示 */}
-        <div className="mt-12 bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Need a Custom App?
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Request a tailored App built by our team to meet your specific marketing needs.
-            </p>
-            <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-              Request
-            </button>
+        {/* 底部提示 - 简化 */}
+        {sortedApps.length > 0 && (
+          <div className="mt-6 bg-white rounded-lg border border-gray-200 p-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-3">
+                Need a Custom App?
+              </p>
+              <button className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200">
+                Request
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

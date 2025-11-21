@@ -80,3 +80,12 @@ jspm_packages/
 
 # TernJS port file
 .tern-port
+
+# Local Node.js binary (should not be uploaded)
+node-v18.18.0-darwin-x64/
+
+# Temporary files
+*.bak
+*~
+email_card_fixed
+email_template_fragment

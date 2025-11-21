@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CreateContentPackData, ContentPack, ProjectSettings } from '../types/contentPack';
+import { CreateContentPackData, ContentPack, ProjectSettings, Expert } from '../types/contentPack';
 import { BrandPack } from '../types/brandPack';
 import { getBrandPacks } from '../utils/brandPackData';
 
@@ -16,13 +16,38 @@ const ContentPackCreationModal: React.FC<ContentPackCreationModalProps> = ({
   onClose,
   onCreate
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   
+  // 创建方式选择状态
+  const [creationMode, setCreationMode] = useState<'select' | 'quick' | 'professional'>('select');
+  
+  // 快捷创建相关状态
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [quickCreateData, setQuickCreateData] = useState({
+    name: '',
+    description: ''
+  });
+  
+  // 模拟专家数据 - 使用翻译键，根据语言变化更新
+  const experts = useMemo<Expert[]>(() => [
+    { id: '1', name: t('expertJohnDewey'), type: 'consumerPsychologist' },
+    { id: '2', name: t('expertRobertCialdini'), type: 'consumerPsychologist' },
+    { id: '3', name: t('expertDavidOgilvy'), type: 'copywritingExpert' },
+    { id: '4', name: t('expertJosephSugarman'), type: 'copywritingExpert' },
+    { id: '5', name: t('expertPhilipKotler'), type: 'marketingExpert' },
+    { id: '6', name: t('expertNeilPatel'), type: 'marketingExpert' },
+    { id: '7', name: t('expertNeilRackham'), type: 'salesExpert' },
+    { id: '8', name: t('expertJeffreyGitomer'), type: 'salesExpert' },
+    { id: '9', name: t('expertAdamSmith'), type: 'economist' },
+    { id: '10', name: t('expertJohnMaynardKeynes'), type: 'economist' }
+  ], [t, i18n.language]);
+
   const [formData, setFormData] = useState<CreateContentPackData>({
     name: '',
     description: '',
-    coverImage: ''
+    coverImage: '',
+    selectedExperts: []
   });
   
   const [projectSettings, setProjectSettings] = useState<ProjectSettings>({
@@ -93,6 +118,55 @@ const ContentPackCreationModal: React.FC<ContentPackCreationModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  // 处理文件上传
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      // 自动设置名称和描述
+      const fileName = file.name.replace(/\.[^/.]+$/, ""); // 移除文件扩展名
+      setQuickCreateData({
+        name: fileName,
+        description: `${t('basedOnDocument')} "${fileName}"`
+      });
+    }
+  };
+
+  // 快捷创建处理
+  const handleQuickCreate = () => {
+    if (!uploadedFile || !quickCreateData.name.trim()) {
+      return;
+    }
+
+    const quickCreateFormData = {
+      name: quickCreateData.name,
+      description: quickCreateData.description,
+      coverImage: '',
+      selectedExperts: [],
+      projectSettings: {
+        brandPackId: '',
+        targetAudience: '',
+        brandVoice: '',
+        brandTone: '',
+        title: quickCreateData.name,
+        goal: t('basedOnDocument')
+      }
+    };
+    
+    const newContentPack = onCreate(quickCreateFormData);
+    
+    // 创建成功后，直接跳转到内容创建页面
+    if (newContentPack) {
+      const params = new URLSearchParams();
+      params.set('name', newContentPack.name);
+      params.set('source', 'document');
+      params.set('fileName', uploadedFile.name);
+      
+      const url = `/content-creation/${newContentPack.id}?${params.toString()}`;
+      navigate(url);
+    }
+  };
+
   const handleCreateContentPack = () => {
     if (!validateForm()) {
       return;
@@ -101,7 +175,8 @@ const ContentPackCreationModal: React.FC<ContentPackCreationModalProps> = ({
     // 直接创建内容包并跳转，不显示服务协议弹窗
     const enhancedFormData = {
       ...formData,
-      projectSettings: projectSettings
+      projectSettings: projectSettings,
+      selectedExperts: formData.selectedExperts
     };
     
     const newContentPack = onCreate(enhancedFormData);
@@ -139,7 +214,8 @@ const ContentPackCreationModal: React.FC<ContentPackCreationModalProps> = ({
     // 保存草稿（不包含项目设置）
     const draftData = {
       ...formData,
-      projectSettings: undefined
+      projectSettings: undefined,
+      selectedExperts: formData.selectedExperts
     };
     
     onCreate(draftData);
@@ -152,6 +228,27 @@ const ContentPackCreationModal: React.FC<ContentPackCreationModalProps> = ({
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleExpertToggle = (expert: Expert) => {
+    setFormData(prev => {
+      const currentExperts = prev.selectedExperts || [];
+      const isSelected = currentExperts.some(e => e.id === expert.id);
+      
+      if (isSelected) {
+        // 移除专家
+        return {
+          ...prev,
+          selectedExperts: currentExperts.filter(e => e.id !== expert.id)
+        };
+      } else {
+        // 添加专家
+        return {
+          ...prev,
+          selectedExperts: [...currentExperts, expert]
+        };
+      }
+    });
   };
 
   const handleProjectSettingsChange = (field: keyof ProjectSettings, value: string) => {
@@ -178,6 +275,153 @@ const ContentPackCreationModal: React.FC<ContentPackCreationModalProps> = ({
 
   if (!isOpen) return null;
 
+  // 渲染创建方式选择界面
+  const renderCreationModeSelection = () => (
+    <div className="p-6">
+      <div className="text-center mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('selectCreationMode')}</h3>
+        <p className="text-gray-600">{t('selectCreationModeSubtitle')}</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 快捷创建 */}
+        <div 
+          onClick={() => setCreationMode('quick')}
+          className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all duration-200 group"
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">{t('quickCreate')}</h4>
+            <p className="text-gray-600 text-sm">{t('quickCreateDescription')}</p>
+            <div className="mt-4 text-xs text-gray-500">
+              {t('quickCreateSupportedFormats')}
+            </div>
+          </div>
+        </div>
+
+        {/* 专业创建 */}
+        <div 
+          onClick={() => setCreationMode('professional')}
+          className="p-6 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 cursor-pointer transition-all duration-200 group"
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">{t('professionalCreate')}</h4>
+            <p className="text-gray-600 text-sm">{t('professionalCreateDescription')}</p>
+            <div className="mt-4 text-xs text-gray-500">
+              {t('professionalCreateFeatures')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // 渲染快捷创建界面
+  const renderQuickCreate = () => (
+    <div className="p-6">
+      <div className="flex items-center mb-6">
+        <button
+          onClick={() => setCreationMode('select')}
+          className="mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h3 className="text-xl font-semibold text-gray-900">{t('quickCreate')}</h3>
+      </div>
+
+      <div className="space-y-6">
+        {/* 文件上传区域 */}
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+          <input
+            type="file"
+            id="file-upload"
+            accept=".pdf,.doc,.docx,.txt"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <label htmlFor="file-upload" className="cursor-pointer">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            {uploadedFile ? (
+              <div>
+                <p className="text-lg font-medium text-gray-900 mb-2">{uploadedFile.name}</p>
+                <p className="text-sm text-gray-600">{t('clickToReselectFile')}</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-lg font-medium text-gray-900 mb-2">{t('uploadDocument')}</p>
+                <p className="text-sm text-gray-600">{t('uploadDocumentDescription')}</p>
+              </div>
+            )}
+          </label>
+        </div>
+
+        {/* 内容包信息 */}
+        {uploadedFile && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('contentPackNameRequired')}
+              </label>
+              <input
+                type="text"
+                value={quickCreateData.name}
+                onChange={(e) => setQuickCreateData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder={t('enterContentPackName')}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('contentPackDescription')}
+              </label>
+              <textarea
+                value={quickCreateData.description}
+                onChange={(e) => setQuickCreateData(prev => ({ ...prev, description: e.target.value }))}
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                placeholder={t('enterContentPackDescription')}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 按钮 */}
+      <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 mt-6">
+        <button
+          type="button"
+          onClick={() => setCreationMode('select')}
+          className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          {t('back')}
+        </button>
+        <button
+          type="button"
+          onClick={handleQuickCreate}
+          disabled={!uploadedFile || !quickCreateData.name.trim()}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          {t('createContentPack')}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -194,11 +438,27 @@ const ContentPackCreationModal: React.FC<ContentPackCreationModalProps> = ({
           </button>
         </div>
 
-        {/* 表单内容 */}
-        <form className="p-6 space-y-8">
-          {/* 内容包基本信息 */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">{t('contentPackBasicInfo')}</h3>
+        {/* 根据创建模式显示不同内容 */}
+        {creationMode === 'select' && renderCreationModeSelection()}
+        {creationMode === 'quick' && renderQuickCreate()}
+        {creationMode === 'professional' && (
+          <div className="p-6">
+            <div className="flex items-center mb-6">
+              <button
+                onClick={() => setCreationMode('select')}
+                className="mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h3 className="text-xl font-semibold text-gray-900">{t('professionalCreate')}</h3>
+            </div>
+
+            <form className="space-y-8">
+              {/* 内容包基本信息 */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-900">{t('contentPackBasicInfo')}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -366,31 +626,63 @@ const ContentPackCreationModal: React.FC<ContentPackCreationModalProps> = ({
 
           </div>
 
-          {/* 按钮 */}
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              className="px-6 py-3 border border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
-            >
-              {t('saveDraft')}
-            </button>
-            <button
-              type="button"
-              onClick={handleCreateContentPack}
-              className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              {t('createContentPack')}
-            </button>
+          {/* 专家选择 */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900">{t('contentExpertSelection')}</h3>
+            <div className="flex flex-wrap gap-2">
+              {experts.map((expert) => {
+                const isSelected = formData.selectedExperts?.some(e => e.id === expert.id) || false;
+                return (
+                  <button
+                    key={expert.id}
+                    type="button"
+                    onClick={() => handleExpertToggle(expert)}
+                    className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-1.5 transition-colors ${
+                      isSelected 
+                        ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                        : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                    }`}
+                  >
+                    {expert.name}
+                    <span className="text-xs opacity-70">({t(expert.type) || expert.type})</span>
+                  </button>
+                );
+              })}
+            </div>
+            {(formData.selectedExperts && formData.selectedExperts.length > 0) && (
+              <p className="mt-2 text-xs text-gray-500">
+                {t('selectedExperts', { count: formData.selectedExperts.length })}
+              </p>
+            )}
           </div>
-        </form>
+
+              {/* 按钮 */}
+              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveDraft}
+                  className="px-6 py-3 border border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
+                >
+                  {t('saveDraft')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateContentPack}
+                  className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  {t('createContentPack')}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
       </div>
     </div>

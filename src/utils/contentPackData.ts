@@ -83,14 +83,14 @@ export const getContentPackSettings = (contentPackId: string): any => {
   return settings ? JSON.parse(settings) : null;
 };
 
-export const createContentPack = (data: any): ContentPack => {
+export const createContentPack = (data: any, t?: Function): ContentPack => {
   const newPack: ContentPack = {
     id: Date.now().toString(),
     name: data.name,
     description: data.description,
     createdAt: new Date().toISOString().split('T')[0],
     updatedAt: new Date().toISOString().split('T')[0],
-    creator: data.creator || '当前用户',
+    creator: data.creator || (t ? t('currentUser') : '当前用户'),
     creatorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=current&backgroundColor=b6e3f4&size=40',
     isShared: false,
     contentCount: 0,

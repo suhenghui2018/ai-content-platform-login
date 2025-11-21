@@ -26,47 +26,47 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const brandVoiceOptions = [
-    '专业',
-    '随意',
-    '友好',
-    '权威',
-    '创意',
-    '技术',
-    '对话式',
-    '正式'
+    t('professional'),
+    t('casual'),
+    t('friendly'),
+    t('authoritative'),
+    t('creative'),
+    t('technical'),
+    t('conversational'),
+    t('formal')
   ];
 
   const audienceOptions = [
-    '普通受众',
-    '商务专业人士',
-    '学生',
-    '科技爱好者',
-    '创意专业人士',
-    '医疗工作者',
-    '教育工作者',
-    '企业家'
+    t('generalAudience'),
+    t('businessProfessionals'),
+    t('students'),
+    t('techEnthusiasts'),
+    t('creativeProfessionals'),
+    t('healthcareWorkers'),
+    t('educators'),
+    t('entrepreneurs')
   ];
 
   const languageOptions = [
-    '英语（美式）',
-    '英语（英式）',
-    '中文（简体）',
-    '中文（繁体）',
-    '西班牙语',
-    '法语',
-    '德语',
-    '日语'
+    t('englishUS'),
+    t('englishUK'),
+    t('chineseSimplified'),
+    t('chineseTraditional'),
+    t('spanish'),
+    t('french'),
+    t('german'),
+    t('japanese')
   ];
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = '请输入项目标题';
+      newErrors.title = t('pleaseEnterProjectTitle');
     }
 
     if (!formData.goal.trim()) {
-      newErrors.goal = '请输入项目目标';
+      newErrors.goal = t('pleaseEnterProjectGoal');
     }
 
     setErrors(newErrors);
@@ -118,7 +118,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
           <div className="space-y-4">
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                标题
+                {t('title')}
               </label>
               <input
                 id="title"
@@ -128,7 +128,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                   errors.title ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="为您的项目命名"
+                placeholder={t('nameYourProject')}
                 autoFocus
               />
               {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
@@ -136,7 +136,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
 
             <div>
               <label htmlFor="goal" className="block text-sm font-medium text-gray-700 mb-2">
-                目标
+                {t('goal')}
               </label>
               <textarea
                 id="goal"
@@ -146,7 +146,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none ${
                   errors.goal ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="描述您的项目、目标等..."
+                placeholder={t('describeYourProjectAndGoals')}
               />
               {errors.goal && <p className="mt-1 text-sm text-red-600">{errors.goal}</p>}
             </div>
@@ -161,7 +161,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
               <button
                 type="button"
                 className="w-5 h-5 bg-gray-400 text-white rounded-full text-xs flex items-center justify-center hover:bg-gray-500 transition-colors"
-                title="更多信息"
+                title={t('moreInformation')}
               >
                 ⓘ
               </button>
@@ -175,7 +175,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                     <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM15.657 6.343a1 1 0 011.414 0A9.972 9.972 0 0119 12a9.972 9.972 0 01-1.929 5.657 1 1 0 11-1.414-1.414A7.971 7.971 0 0017 12a7.971 7.971 0 00-1.343-4.243 1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
-                    <span>品牌语音</span>
+                    <span>{t('brandVoice')}</span>
                   </div>
                 </label>
                 <select
@@ -184,7 +184,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                   onChange={(e) => handleInputChange('brandVoice', e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none bg-white"
                 >
-                  <option value="">选择一个品牌语音</option>
+                  <option value="">{t('selectBrandVoice')}</option>
                   {brandVoiceOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -200,7 +200,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                     <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                     </svg>
-                    <span>受众</span>
+                    <span>{t('targetAudience')}</span>
                   </div>
                 </label>
                 <select
@@ -209,7 +209,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                   onChange={(e) => handleInputChange('targetAudience', e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none bg-white"
                 >
-                  <option value="">选择一个受众</option>
+                  <option value="">{t('selectTargetAudience')}</option>
                   {audienceOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -225,7 +225,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                     <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
                     </svg>
-                    <span>语言</span>
+                    <span>{t('brandTone')}</span>
                   </div>
                 </label>
                 <select
@@ -247,12 +247,12 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
           {/* 上传上下文 */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">
-              上传上下文以帮助AI提供更好的响应
+              {t('uploadContextToHelpAI')}
             </h3>
             
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <div className="text-gray-500 mb-4">
-                您的项目上下文将在这里显示
+                {t('projectContextWillDisplayHere')}
               </div>
               <button
                 type="button"
@@ -262,7 +262,7 @@ const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                添加上下文
+                {t('addContext')}
               </button>
             </div>
           </div>

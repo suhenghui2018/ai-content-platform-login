@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import './i18n';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ContentLanguageProvider } from './contexts/ContentLanguageContext';
 import LanguageSelector from './components/LanguageSelector';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
@@ -12,11 +13,14 @@ import UserManagementPanel from './components/UserManagementPanel';
 import BrandPackCreatePage from './components/BrandPackCreatePage';
 import ContentCreationPage from './components/ContentCreationPage';
 import AppNavigationPage from './components/AppNavigationPage';
+import ABTestCreationPage from './components/ABTestCreationPage';
+import ContentReviewPage from './components/ContentReviewPage';
+import AIChatPage from './components/AIChatPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { initializeDemoData } from './utils/demoData';
 import TestCredentials from './components/TestCredentials';
 import { images } from './assets/images';
-import { setContentPacks } from './utils/contentPackData';
+import { setContentPacks as setContentPacksData } from './utils/contentPackData';
 import { setBrandPacks } from './utils/brandPackData';
 
 // 登录页面组件
@@ -146,7 +150,7 @@ function App() {
     initializeDemoData();
     // 初始化多语言数据
     setBrandPacks(t);
-    setContentPacks(t);
+    setContentPacksData(t);
   }, []);
 
   // 监听语言变化
@@ -154,7 +158,7 @@ function App() {
     // 直接使用i18n.t而不是依赖于外部的t函数
     const updateLanguageData = () => {
       setBrandPacks(i18n.t.bind(i18n));
-      setContentPacks(i18n.t.bind(i18n));
+      setContentPacksData(i18n.t.bind(i18n));
       console.log(`语言已切换至: ${i18n.language}, 已更新所有数据`);
     };
 
@@ -172,22 +176,29 @@ function App() {
     initializeDemoData();
     // 初始化多语言数据
     setBrandPacks(i18n.t.bind(i18n));
-    setContentPacks(i18n.t.bind(i18n));
+    setContentPacksData(i18n.t.bind(i18n));
   }, [i18n]);
 
   return (
     <AuthProvider>
-      <Router basename="/ai-content-platform-login">
-        <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetupPage /></ProtectedRoute>} />
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/brand-pack-create" element={<ProtectedRoute><BrandPackCreatePage /></ProtectedRoute>} />
-          <Route path="/content-creation/:contentPackId" element={<ProtectedRoute><ContentCreationPage /></ProtectedRoute>} />
-          <Route path="/apps" element={<ProtectedRoute><AppNavigationPage /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+      <ContentLanguageProvider>
+        <Router basename="/Memacreate.ai/">
+          <Routes>
+            <Route path="/" element={<LoginPage />} />
+            <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetupPage /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/brand-pack-create" element={<ProtectedRoute><BrandPackCreatePage /></ProtectedRoute>} />
+            <Route path="/content-creation/:contentPackId" element={<ProtectedRoute><ContentCreationPage /></ProtectedRoute>} />
+            <Route path="/apps" element={<ProtectedRoute><AppNavigationPage /></ProtectedRoute>} />
+            <Route path="/ab-test-creation" element={<ProtectedRoute><ABTestCreationPage /></ProtectedRoute>} />
+            <Route path="/content-review" element={<ProtectedRoute><ContentReviewPage /></ProtectedRoute>} />
+            <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
+            <Route path="/content-experts" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/expert-config" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </ContentLanguageProvider>
     </AuthProvider>
   );
 }

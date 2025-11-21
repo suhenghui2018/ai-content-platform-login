@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CreateContentPackData, ContentPack, ProjectSettings } from '../types/contentPack';
+import { CreateContentPackData, ContentPack, ProjectSettings, Expert } from '../types/contentPack';
 import ServiceAgreementModal from './ServiceAgreementModal';
 import ProjectSettingsModal from './ProjectSettingsModal';
 
@@ -15,11 +15,26 @@ const CreateContentPackModal: React.FC<CreateContentPackModalProps> = ({
   onClose, 
   onCreate 
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // 模拟专家数据 - 使用翻译键，根据语言变化更新
+  const experts = useMemo<Expert[]>(() => [
+    { id: '1', name: t('expertJohnDewey'), type: 'consumerPsychologist' },
+    { id: '2', name: t('expertRobertCialdini'), type: 'consumerPsychologist' },
+    { id: '3', name: t('expertDavidOgilvy'), type: 'copywritingExpert' },
+    { id: '4', name: t('expertJosephSugarman'), type: 'copywritingExpert' },
+    { id: '5', name: t('expertPhilipKotler'), type: 'marketingExpert' },
+    { id: '6', name: t('expertNeilPatel'), type: 'marketingExpert' },
+    { id: '7', name: t('expertNeilRackham'), type: 'salesExpert' },
+    { id: '8', name: t('expertJeffreyGitomer'), type: 'salesExpert' },
+    { id: '9', name: t('expertAdamSmith'), type: 'economist' },
+    { id: '10', name: t('expertJohnMaynardKeynes'), type: 'economist' }
+  ], [t, i18n.language]);
+
   const [formData, setFormData] = useState<CreateContentPackData>({
     name: '',
     description: '',
-    coverImage: ''
+    coverImage: '',
+    selectedExperts: []
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showAgreement, setShowAgreement] = useState(false);
@@ -52,10 +67,11 @@ const CreateContentPackModal: React.FC<CreateContentPackModalProps> = ({
 
   const handleAgreementAgree = () => {
     // 用户同意协议后，执行创建操作
-    // 将项目设置数据合并到表单数据中
+    // 将项目设置数据和选中的专家合并到表单数据中
     const enhancedFormData = {
       ...formData,
-      projectSettings: projectSettingsData || undefined
+      projectSettings: projectSettingsData || undefined,
+      selectedExperts: formData.selectedExperts
     };
     
     const newContentPack = onCreate(enhancedFormData);
@@ -69,7 +85,8 @@ const CreateContentPackModal: React.FC<CreateContentPackModalProps> = ({
     setFormData({
       name: '',
       description: '',
-      coverImage: ''
+      coverImage: '',
+      selectedExperts: []
     });
     setErrors({});
     setProjectSettingsData(null);
@@ -99,6 +116,27 @@ const CreateContentPackModal: React.FC<CreateContentPackModalProps> = ({
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleExpertToggle = (expert: Expert) => {
+    setFormData(prev => {
+      const currentExperts = prev.selectedExperts || [];
+      const isSelected = currentExperts.some(e => e.id === expert.id);
+      
+      if (isSelected) {
+        // 移除专家
+        return {
+          ...prev,
+          selectedExperts: currentExperts.filter(e => e.id !== expert.id)
+        };
+      } else {
+        // 添加专家
+        return {
+          ...prev,
+          selectedExperts: [...currentExperts, expert]
+        };
+      }
+    });
   };
 
 
@@ -162,7 +200,7 @@ const CreateContentPackModal: React.FC<CreateContentPackModalProps> = ({
           {/* 封面图片 */}
           <div>
             <label htmlFor="coverImage" className="block text-sm font-medium text-gray-700 mb-2">
-              封面图片 (可选)
+              {t('coverImageOptional')}
             </label>
             <input
               id="coverImage"
@@ -170,13 +208,13 @@ const CreateContentPackModal: React.FC<CreateContentPackModalProps> = ({
               value={formData.coverImage}
               onChange={(e) => handleInputChange('coverImage', e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-              placeholder="请输入图片URL"
+              placeholder={t('pleaseEnterImageUrl')}
             />
             {formData.coverImage && (
               <div className="mt-3">
                 <img
                   src={formData.coverImage}
-                  alt="封面预览"
+                  alt={t('coverPreview')}
                   className="w-32 h-20 object-cover rounded-lg border border-gray-200"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -184,6 +222,38 @@ const CreateContentPackModal: React.FC<CreateContentPackModalProps> = ({
                   }}
                 />
               </div>
+            )}
+          </div>
+
+          {/* 专家选择 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('contentExpertSelection')}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {experts.map((expert) => {
+                const isSelected = formData.selectedExperts?.some(e => e.id === expert.id) || false;
+                return (
+                  <button
+                    key={expert.id}
+                    type="button"
+                    onClick={() => handleExpertToggle(expert)}
+                    className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-1.5 transition-colors ${
+                      isSelected 
+                        ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                        : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                    }`}
+                  >
+                    {expert.name}
+                    <span className="text-xs opacity-70">({t(expert.type) || expert.type})</span>
+                  </button>
+                );
+              })}
+            </div>
+            {(formData.selectedExperts && formData.selectedExperts.length > 0) && (
+              <p className="mt-2 text-xs text-gray-500">
+                {t('selectedExperts', { count: formData.selectedExperts.length })}
+              </p>
             )}
           </div>
 
@@ -217,7 +287,7 @@ const CreateContentPackModal: React.FC<CreateContentPackModalProps> = ({
           isOpen={showAgreement}
           onClose={handleAgreementClose}
           onAgree={handleAgreementAgree}
-          title="内容创作服务协议"
+          title={t('contentCreationServiceAgreement')}
         />
       </div>
     </div>
